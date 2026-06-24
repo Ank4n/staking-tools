@@ -9,7 +9,7 @@
     "ss58Prefix": 0
   },
   "era": 2212,
-  "capturedAtMs": "1782279528000",
+  "capturedAtMs": "1782307416000",
   "activeEraStartMs": "1782272172000",
   "eraDurationMs": "86400000",
   "sessionsPerEra": 6,
@@ -44,7 +44,7 @@
     },
     "issuanceCadenceMs": "60000",
     "maxElapsedPerDripMs": "600000",
-    "lastIssuanceTimestampMs": "1782279480000"
+    "lastIssuanceTimestampMs": "1782307416000"
   },
   "validators": [
     {

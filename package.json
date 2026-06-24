@@ -1,14 +1,15 @@
 {
-  "name": "staking-utils",
+  "name": "staking-tools",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Snapshot + APY tooling for Polkadot staking-async (DAP mode) on Asset Hub chains",
+  "description": "Polkadot staking-async tools — validator APY calculator and more, served as a static site",
   "scripts": {
     "snapshot": "tsx validator/cli/snapshot.ts",
     "apy": "tsx validator/cli/apy.ts",
     "embed": "tsx validator/cli/embed.ts > validator/web/data.json",
     "build-web": "tsx validator/cli/embed.ts > validator/web/data.json && tsx validator/cli/build-web.ts",
+    "build-site": "tsx tools/build-site.ts",
     "test": "tsx --test validator/test/*.test.ts",
     "papi": "papi",
     "typecheck": "tsc --noEmit"

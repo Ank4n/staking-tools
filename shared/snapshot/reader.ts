@@ -21,8 +21,37 @@ type Api = TypedApi<typeof descriptors>;
 
 const PERBILL_DENOM = 1_000_000_000;
 
+/** Max simultaneous per-validator RPC requests against a single node. */
+const RPC_CONCURRENCY = 12;
+
 function perbill(raw: number): Perbill {
   return { raw, fraction: raw / PERBILL_DENOM };
+}
+
+/**
+ * Map `fn` over `items` with at most `concurrency` promises in flight at once,
+ * preserving input order in the result. Keeps a busy node saturated without
+ * firing hundreds of requests simultaneously.
+ */
+async function mapPool<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]);
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    worker,
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 /** Decode a BudgetKey Binary to a readable label: utf8 if printable, else hex. */
@@ -187,10 +216,12 @@ export async function readEraSnapshot(
     pointsByValidator.set(addr, pts);
   }
 
-  const validators: ValidatorEra[] = [];
-
-  // For each validator, fetch prefs + incentive weight (+ pages if requested).
-  for (const entry of overviewEntries) {
+  // Fetch each validator's prefs + incentive weight (+ pages if requested).
+  // Run with bounded concurrency: a chain may have hundreds of validators, so
+  // awaiting them one at a time serializes hundreds of RPC round-trips, but
+  // firing them all at once would overwhelm a public node. The pool keeps the
+  // node busy without flooding it.
+  const validators = await mapPool(overviewEntries, RPC_CONCURRENCY, async (entry) => {
     // Double-map entry keys: [era, validatorAddress].
     const address = entry.keyArgs[1] as string;
     const overview = entry.value;
@@ -200,7 +231,7 @@ export async function readEraSnapshot(
       api.query.Staking.ErasValidatorIncentiveWeight.getValue(era, address),
     ]);
 
-    let nominators: NominatorExposure[] = [];
+    const nominators: NominatorExposure[] = [];
     if (opts.includeNominators && overview.page_count > 0) {
       const pages = await Promise.all(
         Array.from({ length: overview.page_count }, (_, page) =>
@@ -215,7 +246,7 @@ export async function readEraSnapshot(
       }
     }
 
-    validators.push({
+    return {
       address,
       totalStake: overview.total.toString(),
       ownStake: overview.own.toString(),
@@ -226,8 +257,8 @@ export async function readEraSnapshot(
       rewardPoints: pointsByValidator.get(address) ?? 0,
       incentiveWeight: incentiveWeight != null ? incentiveWeight.toString() : null,
       nominators,
-    });
-  }
+    } satisfies ValidatorEra;
+  });
 
   // Stable ordering by descending total stake for human readability.
   validators.sort((a, b) => {

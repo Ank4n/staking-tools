@@ -115,18 +115,11 @@ export interface EraContext {
 
 /** Breakdown of one era's reward for a validator (planck), plus APY. */
 export interface ApyResult {
-  /** Validator's total exposure = own + nominator (planck). */
-  totalExposure: bigint;
-  /** This validator's incentive weight for the era (planck). */
-  incentiveWeight: bigint;
-
   /** --- Per-era reward components (planck) --- */
   /** Validator's slice of the staker pot before commission/own split. */
   validatorTotalStakerReward: bigint;
   /** Commission portion the validator keeps. */
   commissionPayout: bigint;
-  /** Validator's own-stake share of the post-commission remainder. */
-  validatorStakingPayout: bigint;
   /** Validator-kept staker reward = commission + own-stake share. */
   validatorStakerReward: bigint;
   /** Nominators' aggregate staker reward. */
@@ -227,11 +220,8 @@ export function computeValidatorApy(
   const nominatorAnnual = annualize(nominatorReward);
 
   return {
-    totalExposure,
-    incentiveWeight: weight,
     validatorTotalStakerReward,
     commissionPayout,
-    validatorStakingPayout,
     validatorStakerReward,
     nominatorReward,
     validatorIncentive,
