@@ -11,8 +11,32 @@
     --accent: #E6007A;     /* Polkadot magenta */
     --accent-2: #2DD4BF;   /* teal — incentive */
     --warn: #E3B341;
+    --glow: 230,0,122;     /* accent as RGB triplet, for corner glows */
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
     --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* Light palette: paper ground, ink text, lighter teal so it reads on white. */
+  :root[data-theme="light"] {
+    --ground: #F4F6F9;
+    --panel: #FFFFFF;
+    --panel-2: #EEF1F5;
+    --line: #DDE3EA;
+    --text: #1A2129;
+    --muted: #5A6573;
+    --faint: #97A1AE;
+    --accent: #D6006F;     /* slightly deeper magenta for contrast on white */
+    --accent-2: #119C8B;   /* deeper teal — passes contrast on light panels */
+    --warn: #B5811A;
+    --glow: 214,0,111;
+  }
+  /* Follow the OS when the user hasn't picked a theme explicitly. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #F4F6F9; --panel: #FFFFFF; --panel-2: #EEF1F5; --line: #DDE3EA;
+      --text: #1A2129; --muted: #5A6573; --faint: #97A1AE;
+      --accent: #D6006F; --accent-2: #119C8B; --warn: #B5811A; --glow: 214,0,111;
+    }
   }
 
   * { box-sizing: border-box; }
@@ -20,7 +44,7 @@
   body {
     margin: 0;
     background:
-      radial-gradient(1100px 520px at 85% -15%, rgba(230,0,122,0.08), transparent 60%),
+      radial-gradient(1100px 520px at 85% -15%, rgba(var(--glow),0.08), transparent 60%),
       var(--ground);
     color: var(--text);
     font-family: var(--sans);
@@ -56,7 +80,7 @@
     display: flex; flex-direction: column; gap: 24px; }
   /* Glow accent in the corner instead of a flat bar — softer, less "ugly stripe". */
   .hero-card::before { content: ""; position: absolute; inset: 0;
-    background: radial-gradient(420px 200px at 0% 0%, rgba(230,0,122,0.10), transparent 62%);
+    background: radial-gradient(420px 200px at 0% 0%, rgba(var(--glow),0.10), transparent 62%);
     pointer-events: none; }
   .hero-card > * { position: relative; }
 
@@ -76,6 +100,12 @@
   .brand { display: flex; align-items: center; gap: 11px; }
   .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
   h1 { font-family: var(--mono); font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  /* Theme toggle: a small icon button that swaps light/dark. */
+  .theme-toggle { font-family: var(--mono); font-size: 16px; line-height: 1; width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 9px; }
+  .theme-toggle:hover { color: var(--text); border-color: var(--faint); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
 
   /* --- Curve + APY cards --- */
   .curve-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 6px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
@@ -205,6 +235,7 @@
       <span class="dot" aria-hidden="true"></span>
       <h1>Polkadot validator APY calculator</h1>
     </div>
+    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">☾</button>
   </header>
 
   <div class="dash">
@@ -597,6 +628,18 @@
     els.ownRange.parentElement.dataset.zone = zone;
   }
 
+  // Read a CSS custom property off :root, so the canvas follows the theme.
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  // "#RRGGBB" -> "rgba(r,g,b,a)". Falls back to the input if not a 6-digit hex.
+  function hexA(hex, a) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
   function drawCurve(c, sc, ownStake) {
     const canvas = els.curve;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -605,6 +648,13 @@
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
+
+    // Theme-driven colors.
+    const cAccent = cssVar("--accent")   || "#E6007A";
+    const cTeal   = cssVar("--accent-2") || "#2DD4BF";
+    const cGround = cssVar("--ground")   || "#0E1116";
+    const cText   = cssVar("--text")     || "#E6EDF3";
+    const cFaint  = cssVar("--faint")    || "#5A6573";
 
     const pad = { l: 10, r: 10, t: 12, b: 24 };
     const W = cssW - pad.l - pad.r, H = cssH - pad.t - pad.b;
@@ -623,8 +673,8 @@
       ctx.fillStyle = color; ctx.font = "9px ui-monospace, monospace";
       ctx.fillText(label, px + 4, pad.t + 10);
     };
-    drawVLine(Number(optimum), "rgba(227,179,65,0.55)", "target");
-    drawVLine(Number(cap), "rgba(139,151,166,0.5)", "cap");
+    drawVLine(Number(optimum), hexA(cssVar("--warn") || "#E3B341", 0.6), "target");
+    drawVLine(Number(cap), hexA(cFaint, 0.7), "cap");
 
     const tracePath = () => {
       ctx.beginPath();
@@ -639,27 +689,27 @@
     tracePath();
     ctx.lineTo(xToPx(xMax), pad.t + H); ctx.lineTo(pad.l, pad.t + H); ctx.closePath();
     const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + H);
-    grad.addColorStop(0, "rgba(45,212,191,0.20)"); grad.addColorStop(1, "rgba(45,212,191,0.01)");
+    grad.addColorStop(0, hexA(cTeal, 0.20)); grad.addColorStop(1, hexA(cTeal, 0.02));
     ctx.fillStyle = grad; ctx.fill();
     tracePath();
-    ctx.strokeStyle = "#2DD4BF"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = cTeal; ctx.lineWidth = 2; ctx.stroke();
 
     const ownNum = Number(ownStake);
     if (ownNum <= xMax) {
       const w = Number(incentiveWeight(ownStake, optimum, cap, slope));
       const px = xToPx(ownNum), py = yToPx(w);
-      ctx.strokeStyle = "rgba(230,0,122,0.4)"; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.strokeStyle = hexA(cAccent, 0.4); ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
       ctx.beginPath(); ctx.moveTo(px, pad.t + H); ctx.lineTo(px, py); ctx.stroke(); ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2);
-      ctx.fillStyle = "#E6007A"; ctx.fill();
-      ctx.strokeStyle = "#0E1116"; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = "#E6EDF3"; ctx.font = "600 10px ui-monospace, monospace";
+      ctx.fillStyle = cAccent; ctx.fill();
+      ctx.strokeStyle = cGround; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = cText; ctx.font = "600 10px ui-monospace, monospace";
       const lbl = fmtTok(ownStake) + " " + c.tokenSymbol;
       const lw = ctx.measureText(lbl).width;
       ctx.fillText(lbl, Math.min(px + 9, cssW - lw - 4), Math.max(py - 8, pad.t + 11));
     }
 
-    ctx.fillStyle = "#5A6573"; ctx.font = "9px ui-monospace, monospace";
+    ctx.fillStyle = cFaint; ctx.font = "9px ui-monospace, monospace";
     for (let f = 0; f <= 1.5; f += 0.5) {
       const x = Number(cap) * f;
       ctx.fillText(Math.round(x / styleUnit).toLocaleString(), xToPx(x), pad.t + H + 14);
@@ -719,6 +769,31 @@
 
   bindPair("pts", "ptsRange", 200);
   window.addEventListener("resize", render);
+
+  // ---- theme toggle (dark default; persisted; falls back to OS) ----
+  const themeBtn = document.getElementById("themeToggle");
+  function effectiveTheme() {
+    const set = document.documentElement.dataset.theme;
+    if (set) return set;
+    return matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    // Show the icon for the theme you'd switch TO.
+    themeBtn.textContent = t === "light" ? "☾" : "☀";
+    themeBtn.title = t === "light" ? "Switch to dark" : "Switch to light";
+    try { localStorage.setItem("apy-theme", t); } catch (e) {}
+    render(); // repaint the canvas with theme colors
+  }
+  themeBtn.addEventListener("click", () => {
+    applyTheme(effectiveTheme() === "light" ? "dark" : "light");
+  });
+  // Restore saved choice; otherwise just sync the icon to the OS default.
+  let saved = null;
+  try { saved = localStorage.getItem("apy-theme"); } catch (e) {}
+  if (saved === "light" || saved === "dark") applyTheme(saved);
+  else { const t = effectiveTheme(); themeBtn.textContent = t === "light" ? "☾" : "☀";
+         themeBtn.title = t === "light" ? "Switch to dark" : "Switch to light"; }
 
   init();
 })();
