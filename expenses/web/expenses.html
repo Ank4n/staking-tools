@@ -251,6 +251,11 @@ function renderTernary() {
   wireTernaryDrag();
 }
 
+// Percent with one decimal, dropping a trailing ".0" (15 -> "15%", 32.2 -> "32.2%").
+function fmtPct(v) {
+  return (Math.round(v * 10) / 10).toString() + '%';
+}
+
 function applyTernary() {
   const bar = document.querySelector('#t-bar');
   if (!bar) return;
@@ -265,9 +270,9 @@ function applyTernary() {
   bar.querySelector('[data-id="validator_incentive"]').style.background = potColor('validator_incentive');
   bar.querySelector('[data-handle="0"]').style.left = a + '%';
   bar.querySelector('[data-handle="1"]').style.left = (a + b) + '%';
-  document.getElementById('t-pct-buffer').textContent = Math.round(a) + '%';
-  document.getElementById('t-pct-staker_rewards').textContent = Math.round(b) + '%';
-  document.getElementById('t-pct-validator_incentive').textContent = Math.round(c) + '%';
+  document.getElementById('t-pct-buffer').textContent = fmtPct(a);
+  document.getElementById('t-pct-staker_rewards').textContent = fmtPct(b);
+  document.getElementById('t-pct-validator_incentive').textContent = fmtPct(c);
 }
 
 function wireTernaryDrag() {
@@ -416,7 +421,7 @@ function drawFlow(yearlyEm) {
             fill="none" stroke="var(--border)" stroke-width="1" opacity="${opacity * 0.5}"/>
       <rect class="pot-rect" x="${drainsX}" y="${yPot-30}" width="${potW}" height="60" rx="6" opacity="${opacity}"/>
       <text x="${drainsX+16}" y="${yPot-10}" style="font-size:14px;font-weight:600" opacity="${opacity}">${it.label}</text>
-      <text x="${drainsX+16}" y="${yPot+8}" style="font-size:12px" class="muted-text" opacity="${opacity}">${Math.round(v)}% · ${fmt.dot(dotAmount)} DOT/yr</text>
+      <text x="${drainsX+16}" y="${yPot+8}" style="font-size:12px" class="muted-text" opacity="${opacity}">${fmtPct(v)} · ${fmt.dot(dotAmount)} DOT/yr</text>
       <text x="${drainsX+16}" y="${yPot+22}" style="font-size:12px" class="muted-text" opacity="${opacity}">${fmt.usd(dotAmount * price)}/yr</text>
     `;
   });
