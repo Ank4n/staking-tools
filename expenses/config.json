@@ -5,13 +5,7 @@
     "subtitle": "Drag the knobs governance can actually turn. Everything else is computed.",
     "today_date": "2026-05-10",
     "dot_price_usd": 1.33,
-    "dot_price_stops": [
-      1.33,
-      5,
-      10,
-      50,
-      100
-    ],
+    "dot_price_stops": [1.33, 5, 10, 50, 100],
     "assumed_leak_pct": 50
   },
   "issuance_curve": {
@@ -165,8 +159,8 @@
   ],
   "presets": [
     {
-      "id": "today",
-      "label": "Today",
+      "id": "1902",
+      "label": "1902",
       "sub": "Staker 85 · Buffer 15 · Incentive 0",
       "sets": {
         "dap_split.buffer": 15,
@@ -175,8 +169,8 @@
       }
     },
     {
-      "id": "new",
-      "label": "New",
+      "id": "1909",
+      "label": "1909",
       "sub": "Staker 45.2 · Buffer 32.2 · Incentive 22.6",
       "sets": {
         "dap_split.buffer": 32.2,
