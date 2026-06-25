@@ -165,42 +165,23 @@
   ],
   "presets": [
     {
-      "id": "launch",
-      "label": "launch",
-      "sub": "PAH 2.3.0",
+      "id": "today",
+      "label": "Today",
+      "sub": "Staker 85 · Buffer 15 · Incentive 0",
       "sets": {
         "dap_split.buffer": 15,
         "dap_split.staker_rewards": 85,
-        "dap_split.validator_incentive": 0,
-        "from_buffer.treasury_dot": 0,
-        "from_buffer.pusd_per_validator_month": 0,
-        "validator_count": 600
+        "dap_split.validator_incentive": 0
       }
     },
     {
-      "id": "june",
-      "label": "June split",
-      "sub": "Smaller set, all 3 streams active",
+      "id": "new",
+      "label": "New",
+      "sub": "Staker 45.2 · Buffer 32.2 · Incentive 22.6",
       "sets": {
-        "dap_split.buffer": 25,
-        "dap_split.staker_rewards": 50,
-        "dap_split.validator_incentive": 25,
-        "from_buffer.treasury_dot": 0,
-        "from_buffer.pusd_per_validator_month": 0,
-        "validator_count": 600
-      }
-    },
-    {
-      "id": "future",
-      "label": "Target state",
-      "sub": "Smaller set, all 3 streams active",
-      "sets": {
-        "dap_split.buffer": 65,
-        "dap_split.staker_rewards": 31,
-        "dap_split.validator_incentive": 4,
-        "from_buffer.treasury_dot": 8352158,
-        "from_buffer.pusd_per_validator_month": 2000,
-        "validator_count": 250
+        "dap_split.buffer": 32.2,
+        "dap_split.staker_rewards": 45.2,
+        "dap_split.validator_incentive": 22.6
       }
     }
   ],
