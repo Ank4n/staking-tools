@@ -56,20 +56,18 @@
 
   /* --- Dashboard: 2-column grid (40% | 60%) --- */
   /* Left "hero" card spans rows 1-2; right column has curve (row 1) + breakdown (row 2).
-     Row 3 is a full-width Split card; row 4 holds the two accordions. */
+     Row 3 holds the two accordions. */
   .dash { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 18px; align-items: stretch; }
   /* Hero spans both right rows but sizes to its own content and centers vertically. */
   .hero-card  { grid-column: 1; grid-row: 1 / 3; align-self: center; }
   .curve-card { grid-column: 2; grid-row: 1; }
   .stat-card  { grid-column: 2; grid-row: 2; }
-  /* Full-width Split card on its own row, below the breakdown, above the accordions. */
-  .split-card { grid-column: 1 / 3; grid-row: 3; }
-  /* Accordions on row 4: independent height, each sized to its own content. */
-  details.exp { align-self: start; grid-row: 4; }
+  /* Accordions on row 3: independent height, each sized to its own content. */
+  details.exp { align-self: start; grid-row: 3; }
   @media (max-width: 900px) {
     .dash { grid-template-columns: 1fr; }
     /* Collapse explicit placement so cells flow in source order on mobile. */
-    .hero-card, .curve-card, .stat-card, .split-card, details.exp { grid-column: auto; grid-row: auto; }
+    .hero-card, .curve-card, .stat-card, details.exp { grid-column: auto; grid-row: auto; }
   }
   /* Every direct child is a cell that fills its grid track height. */
   .dash > * { min-width: 0; margin: 0; }
@@ -168,43 +166,27 @@
   .src.ref { color: var(--accent);   border-color: rgba(230,0,122,0.35); }
   .src.era { color: var(--accent-2); border-color: rgba(45,212,191,0.30); }
 
-  /* --- Split vs. consolidate (full-width card) --- */
-  .split-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-    padding: 17px 22px 19px; display: flex; flex-direction: column; }
-  /* Body: stepper left · APY figure center · delta badge right — spread full-width. */
-  .split-body { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 22px 40px; margin-top: 14px; margin-bottom: 4px; }
+  /* --- Run-N-validators block, inside the hero card --- */
+  /* Sits below the self-stake control: a count stepper + the ×N totals it drives. */
+  .hero-multi { padding-top: 18px; margin-top: 4px; border-top: 1px dashed var(--line);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+  .hm-control { display: flex; flex-direction: column; gap: 9px; }
+  .hm-label { font-size: 13.5px; color: var(--text); }
+  .hm-totals { display: flex; gap: 26px; }
+  .hm-stat { display: flex; flex-direction: column; gap: 3px; text-align: right; }
+  .hm-k { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .hm-v { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--text); }
 
-  /* Validator-count stepper: − [N] + with a label. */
-  .split-count { display: flex; flex-direction: column; gap: 9px; }
-  .split-count .lbl { font-size: 13.5px; color: var(--text); }
+  /* Validator-count stepper: − [N] +. */
   .stepper { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--line);
     border-radius: 9px; overflow: hidden; background: var(--panel-2); width: max-content; }
-  .stepper button { font-family: var(--mono); font-size: 19px; line-height: 1; width: 42px; height: 42px;
+  .stepper button { font-family: var(--mono); font-size: 18px; line-height: 1; width: 38px; height: 38px;
     background: transparent; color: var(--text); border: 0; cursor: pointer; }
   .stepper button:hover:not(:disabled) { background: var(--line); }
   .stepper button:disabled { color: var(--faint); cursor: default; }
   .stepper button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
-  .stepper .n { font-family: var(--mono); font-size: 19px; font-weight: 600; min-width: 40px; text-align: center;
-    border-left: 1px solid var(--line); border-right: 1px solid var(--line); height: 42px; line-height: 42px; }
-
-  /* Center APY figure — grows to fill the gap between stepper and badge. */
-  .split-fig { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-  .split-fig .k { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-  .split-fig .v { font-family: var(--mono); font-size: clamp(34px, 4.6vw, 52px); font-weight: 600; line-height: 1.0; }
-  .split-fig.split .v { color: var(--accent-2); }
-  /* Delta-vs-1-validator badge, right-aligned. */
-  .split-delta { font-family: var(--mono); font-size: 13.5px; font-weight: 600;
-    padding: 6px 13px; border-radius: 8px; white-space: nowrap; }
-  .split-delta.up   { color: var(--accent-2); background: rgba(45,212,191,0.10); border: 1px solid rgba(45,212,191,0.30); }
-  .split-delta.down { color: var(--warn);    background: rgba(227,179,65,0.10); border: 1px solid rgba(227,179,65,0.30); }
-
-  /* Terse caveat line. */
-  .split-note { margin-top: 16px; padding-top: 13px; border-top: 1px dashed var(--line);
-    font-family: var(--mono); font-size: 11.5px; color: var(--faint); line-height: 1.5; }
-  .split-note b { color: var(--muted); font-weight: 600; }
-  /* When the chosen split drops a node below min self-stake. */
-  .split-card[data-bad="1"] .split-fig.split .v { color: var(--warn); }
+  .stepper .n { font-family: var(--mono); font-size: 18px; font-weight: 600; min-width: 38px; text-align: center;
+    border-left: 1px solid var(--line); border-right: 1px solid var(--line); height: 38px; line-height: 38px; }
 
   /* --- Reward-per-era stacked bar --- */
   .bar-block { margin-top: auto; }
@@ -226,6 +208,10 @@
     margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line);
     font-family: var(--mono); }
   .annual-k { font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  /* Right side: small "per-node × N =" calc above/before the big total. */
+  .annual-tot { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .annual-calc { font-size: 12px; color: var(--faint); }
+  .annual-calc b { color: var(--muted); font-weight: 600; }
   .annual-v { font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; color: var(--text); }
 </style>
 
@@ -243,14 +229,14 @@
   <!-- Left: combined APY hero + self-stake control (spans rows 1-2) -->
   <div class="hero-card">
     <div class="hero-apy">
-      <div class="k">Your validator APY · on own stake</div>
+      <div class="k">Your validator APY · per node</div>
       <div class="v"><span id="valApy">—</span><span class="pct">%</span></div>
       <div class="sub">staker pool share + self-stake incentive</div>
     </div>
 
     <div class="field hero-field">
       <div class="own-top">
-        <label for="own">Your self-stake</label>
+        <label for="own">Your self-stake <span class="hint">per validator</span></label>
         <span class="own-status" id="ownStatus" data-zone=""></span>
       </div>
       <div class="row">
@@ -260,6 +246,21 @@
       <div class="slider-wrap">
         <input type="range" id="ownRange" min="0" step="1" />
         <div class="ticks" id="ownTicks" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Run N validators: APY per node is flat, but stake & rewards scale ×N. -->
+    <div class="hero-multi">
+      <div class="hm-control">
+        <span class="hm-label">Validators</span>
+        <div class="stepper">
+          <button type="button" id="splitMinus" aria-label="Fewer validators">−</button>
+          <span class="n" id="splitN">1</span>
+          <button type="button" id="splitPlus" aria-label="More validators">+</button>
+        </div>
+      </div>
+      <div class="hm-totals">
+        <div class="hm-stat"><span class="hm-k">Total staked</span><span class="hm-v" id="totalStake">—</span></div>
       </div>
     </div>
   </div>
@@ -273,7 +274,7 @@
 
   <!-- Row 2 right: per-era reward composition -->
   <div class="stat-card">
-    <div class="card-head">Reward per era</div>
+    <div class="card-head">Reward per era · per validator</div>
 
     <div class="bar-block">
       <div class="bar-stack" id="barStack">
@@ -289,7 +290,10 @@
 
     <div class="annual-row">
       <span class="annual-k">Annualized</span>
-      <span class="annual-v" id="bAnnual">—</span>
+      <span class="annual-tot">
+        <span class="annual-calc" id="bAnnualCalc"></span>
+        <span class="annual-v" id="bAnnual">—</span>
+      </span>
     </div>
   </div>
 
@@ -335,29 +339,6 @@
       <div class="row-stat"><span class="k">Incentive pot / era <span class="src ref">Ref 1909</span></span><span class="v teal" id="pIncentivePot">—</span></div>
     </div>
   </details>
-
-  <!-- Row 3: full-width split-vs-consolidate. Reuses the hero's self-stake. -->
-  <div class="split-card" id="splitCard">
-    <div class="card-head">Split your self-stake</div>
-    <div class="split-body">
-      <div class="split-count">
-        <span class="lbl">Split into</span>
-        <div class="stepper">
-          <button type="button" id="splitMinus" aria-label="Fewer validators">−</button>
-          <span class="n" id="splitN">2</span>
-          <button type="button" id="splitPlus" aria-label="More validators">+</button>
-        </div>
-      </div>
-
-      <div class="split-fig split">
-        <span class="k"><span id="splitNLabel">2</span> validators · <span id="splitPer">—</span> each</span>
-        <span class="v" id="splitApy">—</span>
-      </div>
-
-      <span class="split-delta" id="splitDelta"></span>
-    </div>
-    <div class="split-note" id="splitNote"></div>
-  </div>
 
   </div><!-- /.dash -->
 
@@ -405,6 +386,9 @@
   // ---- state ----
   let chainKey = "pah";
   let decimals = 10;
+  // How many identical validators the user runs. APY is per-node (flat); totals ×N.
+  const SPLIT_MIN = 1, SPLIT_MAX = 10;
+  let splitN = 1;
   const unit = () => 10n ** BigInt(decimals);
   function toPlanck(tokens) {
     const [i, f = ""] = String(tokens).split(".");
@@ -417,8 +401,7 @@
   ["valApy","apyBasis","ownStatus","ownTicks","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange",
    "segStaker","segIncentive","bStaker","bIncentive","bTotal","bAnnual",
    "pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pValidators","pTotalSelf","pTotalStake","pInflation","pStakerPot","pIncentivePot",
-   "splitCard","splitMinus","splitPlus","splitN","splitNLabel",
-   "splitApy","splitPer","splitDelta","splitNote",
+   "splitMinus","splitPlus","splitN","totalStake","bAnnualCalc",
    "curve"]
     .forEach(id => els[id] = document.getElementById(id));
 
@@ -455,7 +438,9 @@
   }
 
   // ---- compute (commission 0; max commission is 0) ----
-  function compute(c, sc, ownStake, nomStake, pointsFrac) {
+  // `nNodes` = how many identical validators the user runs. APY is per-node; the
+  // only N-dependence is the incentive denominator (your N nodes all add weight).
+  function compute(c, sc, ownStake, nomStake, pointsFrac, nNodes = 1) {
     const totalExposure = ownStake + nomStake;
     const totalPoints = BigInt(c.totalRewardPoints);
     const avgPoints = c.validatorCount > 0 ? totalPoints / BigInt(c.validatorCount + 1) : 0n;
@@ -466,8 +451,8 @@
     const nominator = valTotalStaker - valStaking;
 
     const w = incentiveWeight(ownStake, sc.optimum, sc.cap, sc.slopeRaw);
-    // Denominator = sum over the existing set + this validator's own weight.
-    const sumW = sc.sumAll + w;
+    // Denominator = existing set + all N of the user's identical nodes' weights.
+    const sumW = sc.sumAll + w * BigInt(nNodes);
     const incentive = mulRat(sc.incentivePot, w, sumW);
 
     const valEraTotal = valStaking + incentive;
@@ -504,11 +489,17 @@
     const own = toPlanck(els.own.value || "0");
     const nom = toPlanck(els.nom.value || "0");
     const pointsFrac = parseFloat(els.pts.value || "0") / 100;
-    const r = compute(c, sc, own, nom, pointsFrac);
+    const r = compute(c, sc, own, nom, pointsFrac, splitN);
 
     els.valApy.textContent = pct(r.valApy);
     // Provenance footnote: snapshot era + when it was last refreshed from chain.
     els.apyBasis.textContent = `Based on Era ${c.era}${fmtUpdated(c.updatedAtMs)}`;
+
+    // Run-N validators: APY is per-node (flat); hero shows total stake only.
+    els.splitN.textContent = splitN;
+    els.splitMinus.disabled = splitN <= SPLIT_MIN;
+    els.splitPlus.disabled = splitN >= SPLIT_MAX;
+    els.totalStake.textContent = fmtTok(own * BigInt(splitN)) + " " + sym;
 
     // Self-stake slider status — terse, zone-driven.
     updateOwnStatus(toTokens(own), sym);
@@ -538,80 +529,14 @@
     els.bStaker.textContent = fmtTok(r.valStaking) + " " + sym;
     els.bIncentive.textContent = fmtTok(r.incentive) + " " + sym;
     els.bTotal.textContent = fmtTok(r.valEraTotal) + " " + sym;
-    els.bAnnual.textContent = fmtTok(r.valAnnual) + " " + sym;
+    // Annualized total across all N validators (bar above is per-node composition).
+    // When N>1, show the small "per-node × N =" calc before the big total.
+    els.bAnnual.textContent = fmtTok(r.valAnnual * BigInt(splitN)) + " " + sym;
+    els.bAnnualCalc.innerHTML = splitN > 1
+      ? `${fmtTok(r.valAnnual)} <b>× ${splitN}</b> =`
+      : "";
 
     drawCurve(c, sc, own);
-    renderSplit(c, sc, own, nom);
-  }
-
-  // ---- Split vs. consolidate ----
-  // Take the self-stake the user already entered as the TOTAL pile, and split it
-  // equally across N validators. Each node is a separate validator: its own
-  // staker-pool seat (avg points) plus the sqrt incentive on its per-node stake.
-  // Because every seat is a fresh staker slice and sqrt(total/N)·N > sqrt(total),
-  // APY on the same total rises with N — until total/N falls below the minimum
-  // self-stake, where the extra nodes can't validate.
-  const SPLIT_MIN = 2, SPLIT_MAX = 10;
-  let splitN = 3; // default illustrates the 1×30k vs 3×10k case
-
-  // Annualized reward across ALL nNodes for `totalOwn` split equally, with
-  // `nomPerNode` backing each. Returns planck/year.
-  function splitAnnual(c, sc, totalOwn, nomPerNode, nNodes) {
-    const ownPerNode = totalOwn / BigInt(nNodes);
-    const totalExposure = ownPerNode + nomPerNode;
-    const totalPoints = BigInt(c.totalRewardPoints);
-    const avgPoints = c.validatorCount > 0 ? totalPoints / BigInt(c.validatorCount) : 0n;
-
-    const valTotalStaker = mulRat(sc.stakerPot, avgPoints, totalPoints);
-    const valStaking = mulRat(valTotalStaker, ownPerNode, totalExposure || 1n);
-
-    const w = incentiveWeight(ownPerNode, sc.optimum, sc.cap, sc.slopeRaw);
-    // All N nodes are new entrants: each adds its weight to the denominator.
-    const sumW = sc.sumAll + w * BigInt(nNodes);
-    const incentive = mulRat(sc.incentivePot, w, sumW);
-
-    const eraPerNode = valStaking + incentive;
-    const epy = Number(ONE_YEAR_MS) / Number(BigInt(c.eraDurationMs));
-    return BigInt(Math.round(Number(eraPerNode) * epy * nNodes));
-  }
-
-  function renderSplit(c, sc, totalOwn, nomPerNode) {
-    const sym = c.tokenSymbol;
-    const minPlanck = toPlanck(REF.minTok);
-
-    // Baseline: the whole pile on one validator.
-    const baseAnnual = splitAnnual(c, sc, totalOwn, nomPerNode, 1);
-    const baseApy = ratio(baseAnnual, totalOwn || 1n);
-    const splitAnn = splitAnnual(c, sc, totalOwn, nomPerNode, splitN);
-    const splitApy = ratio(splitAnn, totalOwn || 1n);
-    const perNode = splitN > 0 ? totalOwn / BigInt(splitN) : 0n;
-    const eligible = perNode >= minPlanck && totalOwn > 0n;
-
-    els.splitN.textContent = splitN;
-    els.splitNLabel.textContent = splitN;
-    els.splitMinus.disabled = splitN <= SPLIT_MIN;
-    els.splitPlus.disabled = splitN >= SPLIT_MAX;
-
-    els.splitApy.textContent = eligible ? pct(splitApy) + "%" : "below min";
-    els.splitPer.textContent = fmtTok(perNode) + " " + sym;
-
-    // Delta vs. the consolidated baseline (the hero's own APY).
-    const d = (splitApy - baseApy) * 100;
-    els.splitDelta.className = "split-delta " + (d >= 0 ? "up" : "down");
-    els.splitDelta.textContent = eligible ? `${d >= 0 ? "+" : ""}${d.toFixed(2)}% vs 1 validator` : "";
-    els.splitDelta.style.display = eligible ? "" : "none";
-    els.splitCard.dataset.bad = eligible ? "0" : "1";
-
-    // Single caveat line — minimal words.
-    if (totalOwn <= 0n) {
-      els.splitNote.innerHTML = `Set your self-stake above to compare.`;
-    } else if (!eligible) {
-      els.splitNote.innerHTML =
-        `Each node below the <b>${REF.minTok.toLocaleString()} ${sym}</b> minimum self-stake — not electable.`;
-    } else {
-      els.splitNote.innerHTML =
-        `APY holds only if each node draws enough nominator backing to get elected.`;
-    }
   }
 
   // Slider zones: <min (warn) · min→optimum · optimum→cap · >cap (capped).
@@ -747,7 +672,7 @@
     const nomMax = Math.round(toTokens(BigInt(c.totalStake)) / c.validatorCount * 2);
     bindPair("nom", "nomRange", nomMax);
 
-    // Split card: stepper over validator count; reuses the hero's self-stake.
+    // Validator-count stepper in the hero (drives the ×N totals).
     els.splitMinus.addEventListener("click", () => {
       if (splitN > SPLIT_MIN) { splitN--; render(); }
     });
