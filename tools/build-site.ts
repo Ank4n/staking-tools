@@ -58,11 +58,7 @@ const APPS: App[] = [
 function landingPage(apps: App[]): string {
   const cards = apps
     .map(
-      (a) => `      <a class="card" href="./${a.slug}/">
-        <span class="icon">${a.icon}</span>
-        <span class="title">${a.title}</span>
-        <span class="blurb">${a.blurb}</span>
-      </a>`,
+      (a) => `      <a class="card" href="./${a.slug}/">${a.title}</a>`,
     )
     .join("\n");
 
@@ -71,11 +67,11 @@ function landingPage(apps: App[]): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Polkadot Staking Tools</title>
+<title>Staking Tools</title>
 <style>
   :root {
     --ground: #0E1116; --panel: #161B22; --line: #283039;
-    --text: #E6EDF3; --muted: #8B97A6; --faint: #5A6573; --accent: #E6007A;
+    --text: #E6EDF3; --accent: #E6007A;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
     --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
@@ -84,31 +80,24 @@ function landingPage(apps: App[]): string {
       radial-gradient(1100px 520px at 85% -15%, rgba(230,0,122,0.08), transparent 60%), var(--ground);
     color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 860px; margin: 0 auto; padding: clamp(40px, 9vw, 110px) clamp(16px, 4vw, 36px) 60px; }
-  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 8px; }
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 32px; }
   .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
   h1 { font-family: var(--mono); font-size: clamp(22px, 3vw, 30px); font-weight: 600; letter-spacing: -0.02em; margin: 0; }
-  .sub { color: var(--muted); font-size: 14px; margin: 6px 0 36px 21px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .card { display: flex; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 16px; padding: 22px 22px 24px; text-decoration: none; color: inherit;
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 240px)); gap: 16px; }
+  .card { display: flex; align-items: center; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px 24px; text-decoration: none; color: inherit;
+    font-family: var(--mono); font-size: 17px; font-weight: 600;
     transition: border-color 0.15s, transform 0.15s; }
   .card:hover { border-color: var(--accent); transform: translateY(-2px); }
   .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .card .icon { font-size: 26px; }
-  .card .title { font-family: var(--mono); font-size: 16px; font-weight: 600; }
-  .card .blurb { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  footer { margin-top: 48px; font-size: 12px; color: var(--faint); }
-  footer a { color: var(--muted); }
 </style>
 </head>
 <body>
   <main class="wrap">
-    <div class="brand"><span class="dot"></span><h1>Polkadot Staking Tools</h1></div>
-    <p class="sub">Calculators and explorers for Polkadot staking-async.</p>
+    <div class="brand"><span class="dot"></span><h1>Staking Tools</h1></div>
     <div class="grid">
 ${cards}
     </div>
-    <footer>staking-async (DAP mode) · data is a point-in-time on-chain snapshot.</footer>
   </main>
 </body>
 </html>
