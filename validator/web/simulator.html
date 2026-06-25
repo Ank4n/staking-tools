@@ -28,68 +28,127 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  .wrap { max-width: 860px; margin: 0 auto; padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 36px) 60px; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 36px) 60px; }
+
+  /* --- Dashboard: 2-column grid (40% | 60%) --- */
+  /* Left "hero" card spans rows 1-2; right column has curve (row 1) + breakdown (row 2);
+     row 3 holds the two accordions. Per-row equal height comes free from grid. */
+  .dash { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 18px; align-items: stretch; }
+  /* Hero spans both right rows but sizes to its own content and centers vertically. */
+  .hero-card  { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+  .curve-card { grid-column: 2; grid-row: 1; }
+  .stat-card  { grid-column: 2; grid-row: 2; }
+  /* Row 3 accordions: independent height, each sized to its own content. */
+  details.exp { align-self: start; }
+  @media (max-width: 900px) {
+    .dash { grid-template-columns: 1fr; }
+    /* Collapse explicit placement so cells flow in source order on mobile. */
+    .hero-card, .curve-card, .stat-card { grid-column: auto; grid-row: auto; }
+  }
+  /* Every direct child is a cell that fills its grid track height. */
+  .dash > * { min-width: 0; margin: 0; }
+
+  /* --- Combined hero: APY result on top, self-stake control below --- */
+  .hero-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px 26px 24px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 24px; }
+  /* Glow accent in the corner instead of a flat bar — softer, less "ugly stripe". */
+  .hero-card::before { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(420px 200px at 0% 0%, rgba(230,0,122,0.10), transparent 62%);
+    pointer-events: none; }
+  .hero-card > * { position: relative; }
+
+  .hero-apy .k { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .hero-apy .v { font-family: var(--mono); font-size: clamp(56px, 7vw, 84px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.0; margin: 10px 0 8px; }
+  .hero-apy .v .pct { font-size: 0.42em; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .hero-apy .sub { font-size: 14px; color: var(--faint); }
+
+  /* Self-stake control anchored at the bottom of the card. */
+  .hero-field { margin-top: auto; padding-top: 4px; }
 
   /* --- Masthead --- */
   header.masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
   .brand { display: flex; align-items: center; gap: 11px; }
   .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
-  h1 { font-family: var(--mono); font-size: clamp(17px, 2.2vw, 21px); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  h1 { font-family: var(--mono); font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
-  /* --- Core: curve + APY --- */
-  .core { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: stretch; }
-  @media (max-width: 720px) { .core { grid-template-columns: 1fr; } }
+  /* --- Curve + APY cards --- */
+  .curve-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 6px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .curve-head { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+  canvas#curve { width: 100%; height: auto; display: block; margin: auto 0; }
 
-  .curve-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 6px; position: relative; overflow: hidden; }
-  .curve-head { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); margin-bottom: 4px; }
-  canvas#curve { width: 100%; height: auto; display: block; }
+  /* Generic stat card (per-era breakdown) */
+  .stat-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 17px 22px; display: flex; flex-direction: column; }
+  .card-head { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 
-  .apy-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; justify-content: center; position: relative; }
-  .apy-card::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px; border-radius: 3px; background: var(--accent); }
-  .apy-card .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-  .apy-card .v { font-family: var(--mono); font-size: clamp(44px, 8vw, 64px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.0; margin: 6px 0 4px; }
-  .apy-card .v .pct { font-size: 0.42em; color: var(--muted); font-weight: 400; margin-left: 2px; }
-  .apy-card .sub { font-size: 12px; color: var(--faint); }
+  /* --- Self-stake control (lives inside the hero card) --- */
+  .own-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 11px; }
+  .own-top label { font-size: 15px; color: var(--text); }
+  /* Status hint: tiny, monospace, color shifts by zone. Min words. */
+  .own-status { font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: 0.02em; }
+  .own-status[data-zone="below"]   { color: var(--warn); }
+  .own-status[data-zone="optimum"] { color: var(--accent-2); }
+  .own-status[data-zone="capped"]  { color: var(--accent-2); }
 
-  /* --- Primary control --- */
-  .own-control { margin-top: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
-  .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--text); margin-bottom: 11px; }
-  .field label .hint { font-family: var(--mono); font-size: 11px; color: var(--faint); font-weight: 400; }
-  .field .row { display: flex; align-items: center; gap: 12px; }
-  input[type="range"] { -webkit-appearance: none; appearance: none; flex: 1; height: 4px; border-radius: 3px; background: var(--line); outline: none; }
-  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--ground); box-shadow: 0 0 0 1px var(--accent); }
-  input[type="range"]::-moz-range-thumb { width: 17px; height: 17px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--ground); }
-  input[type="range"]:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
-  input[type="number"] { width: 130px; font-family: var(--mono); font-size: 13px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; text-align: right; }
+  .field .row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  input[type="number"] { flex: 1; font-family: var(--mono); font-size: 16px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; text-align: left; }
   input[type="number"]:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; border-color: transparent; }
-  .field .unit { font-family: var(--mono); font-size: 11.5px; color: var(--faint); min-width: 40px; }
+  .field .unit { font-family: var(--mono); font-size: 13px; color: var(--faint); min-width: 34px; }
+
+  /* Slider + tick markers (min / optimum / cap). */
+  .slider-wrap { position: relative; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 3px; background: var(--line); outline: none; display: block; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 19px; height: 19px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--ground); box-shadow: 0 0 0 1px var(--accent); }
+  input[type="range"]::-moz-range-thumb { width: 19px; height: 19px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--ground); }
+  input[type="range"]:focus-visible { box-shadow: 0 0 0 2px var(--accent-2); }
+  /* Below-min zone: tint the track amber so 0–10k reads as "not enough yet". */
+  .slider-wrap[data-zone="below"] input[type="range"]::-webkit-slider-thumb { background: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+  .slider-wrap[data-zone="below"] input[type="range"]::-moz-range-thumb { background: var(--warn); }
+  .ticks { position: relative; height: 30px; margin-top: 8px; }
+  .ticks .tick { position: absolute; transform: translateX(-50%); top: 0;
+    display: flex; flex-direction: column; align-items: center; line-height: 1.25;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.02em; color: var(--faint); }
+  .ticks .tick b { color: var(--muted); font-size: 11px; font-weight: 600; }
+  .ticks .tick::before { content: ""; position: absolute; top: -10px; left: 50%; width: 1px; height: 5px; background: var(--line); }
 
   /* --- Expandable --- */
-  details.exp { margin-top: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-  details.exp > summary { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 15px 20px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  details.exp { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  details.exp > summary { font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 17px 22px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
   details.exp > summary::-webkit-details-marker { display: none; }
   details.exp > summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
-  details.exp > summary .chev { transition: transform 0.18s; color: var(--faint); font-size: 13px; }
+  details.exp > summary .chev { transition: transform 0.18s; color: var(--faint); font-size: 15px; }
   details.exp[open] > summary .chev { transform: rotate(90deg); }
   details.exp > summary:hover { color: var(--text); }
   .exp-body { padding: 4px 20px 20px; border-top: 1px solid var(--line); }
 
   .ctrl-grid { display: grid; grid-template-columns: 1fr; gap: 20px; padding-top: 16px; }
-  .row-stat { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); font-size: 13px; padding: 9px 0; border-top: 1px dashed var(--line); }
+  .row-stat { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); font-size: 14.5px; padding: 11px 0; border-top: 1px dashed var(--line); }
   .row-stat:first-child { border-top: 0; }
   .row-stat .k { color: var(--muted); }
   .row-stat .v { color: var(--text); }
   .row-stat .v.teal { color: var(--accent-2); }
 
-  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; margin-top: 8px; }
-  td { padding: 10px 0; border-bottom: 1px solid var(--line); }
-  tr:last-child td { border-bottom: 0; }
-  td.label { color: var(--muted); }
-  td.val { text-align: right; color: var(--text); }
-  tr.stream-staker td.label::before { content: "■ "; color: var(--accent); }
-  tr.stream-incentive td.label::before { content: "■ "; color: var(--accent-2); }
-  tr.total td { font-weight: 600; color: var(--text); }
-  .scroll-x { overflow-x: auto; }
+  /* --- Reward-per-era stacked bar --- */
+  .bar-block { margin-top: auto; }
+  .bar-stack { display: flex; width: 100%; height: 30px; border-radius: 8px; overflow: hidden;
+    background: var(--panel-2); border: 1px solid var(--line); }
+  .seg { height: 100%; transition: width 0.25s ease; min-width: 0; }
+  .seg-staker    { background: linear-gradient(90deg, #E6007A, #ff3d9a); }
+  .seg-incentive { background: linear-gradient(90deg, #2DD4BF, #4ee9d6); }
+  .bar-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 14px;
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .bar-legend .lg { display: inline-flex; align-items: center; gap: 7px; }
+  .bar-legend .lg b { color: var(--text); font-weight: 600; margin-left: 3px; }
+  .bar-legend .dot { width: 9px; height: 9px; border-radius: 2px; }
+  .lg-staker .dot    { background: var(--accent); }
+  .lg-incentive .dot { background: var(--accent-2); }
+  .lg-total { margin-left: auto; }
+
+  .annual-row { display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line);
+    font-family: var(--mono); }
+  .annual-k { font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .annual-v { font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; color: var(--text); }
 </style>
 
 <div class="wrap">
@@ -100,30 +159,62 @@
     </div>
   </header>
 
-  <section class="core">
-    <div class="curve-card">
-      <div class="curve-head">Self-stake incentive curve</div>
-      <canvas id="curve" width="520" height="220" role="img"
-        aria-label="Incentive weight vs self-stake, with your position marked"></canvas>
-    </div>
-    <div class="apy-card">
+  <div class="dash">
+
+  <!-- Left: combined APY hero + self-stake control (spans rows 1-2) -->
+  <div class="hero-card">
+    <div class="hero-apy">
       <div class="k">Your validator APY · on own stake</div>
       <div class="v"><span id="valApy">—</span><span class="pct">%</span></div>
       <div class="sub">staker pool share + self-stake incentive</div>
     </div>
-  </section>
 
-  <div class="own-control">
-    <div class="field">
-      <label for="own">Your self-stake <span class="hint" id="ownHint"></span></label>
+    <div class="field hero-field">
+      <div class="own-top">
+        <label for="own">Your self-stake</label>
+        <span class="own-status" id="ownStatus" data-zone=""></span>
+      </div>
       <div class="row">
-        <input type="range" id="ownRange" min="0" step="1" />
         <input type="number" id="own" min="0" step="100" />
         <span class="unit" id="unit1"></span>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="ownRange" min="0" step="1" />
+        <div class="ticks" id="ownTicks" aria-hidden="true"></div>
       </div>
     </div>
   </div>
 
+  <!-- Row 1 right: curve -->
+  <div class="curve-card">
+    <div class="curve-head">Self-stake incentive curve</div>
+    <canvas id="curve" width="520" height="220" role="img"
+      aria-label="Incentive weight vs self-stake, with your position marked"></canvas>
+  </div>
+
+  <!-- Row 2 right: per-era reward composition -->
+  <div class="stat-card">
+    <div class="card-head">Reward per era</div>
+
+    <div class="bar-block">
+      <div class="bar-stack" id="barStack">
+        <div class="seg seg-staker"    id="segStaker"></div>
+        <div class="seg seg-incentive" id="segIncentive"></div>
+      </div>
+      <div class="bar-legend">
+        <span class="lg lg-staker"><span class="dot"></span>Staker pool <b id="bStaker">—</b></span>
+        <span class="lg lg-incentive"><span class="dot"></span>Incentive <b id="bIncentive">—</b></span>
+        <span class="lg lg-total">Total <b id="bTotal">—</b></span>
+      </div>
+    </div>
+
+    <div class="annual-row">
+      <span class="annual-k">Annualized</span>
+      <span class="annual-v" id="bAnnual">—</span>
+    </div>
+  </div>
+
+  <!-- Row 3: assumptions | chain parameters (toggle together) -->
   <details class="exp" id="assumptionsExp">
     <summary>Assumptions <span class="chev">›</span></summary>
     <div class="exp-body">
@@ -163,13 +254,7 @@
     </div>
   </details>
 
-  <details class="exp" id="breakdownExp">
-    <summary>Per-era reward breakdown <span class="chev">›</span></summary>
-    <div class="exp-body">
-      <div class="scroll-x"><table><tbody id="breakdownBody"></tbody></table></div>
-    </div>
-  </details>
-</div>
+  </div><!-- /.dash -->
 
 <script id="data" type="application/json">__DATA__</script>
 <script>
@@ -184,7 +269,7 @@
   // Token counts; scaled to each chain's decimals at use.
   const REF = {
     stakerPct: 45.2, incentivePct: 22.6, bufferPct: 32.2,
-    optimumTok: 30000, capTok: 100000, slopeK: 0.5,
+    minTok: 10000, optimumTok: 30000, capTok: 100000, slopeK: 0.5,
   };
 
   // ---- math (ported from src/apy/calculator.ts; BigInt-exact) ----
@@ -222,9 +307,10 @@
   const toTokens = (planck) => Number(planck) / Number(unit());
 
   const els = {};
-  ["valApy","ownHint","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange",
+  ["valApy","ownStatus","ownTicks","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange",
+   "segStaker","segIncentive","bStaker","bIncentive","bTotal","bAnnual",
    "pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pInflation","pStakerPot","pIncentivePot",
-   "breakdownBody","curve"]
+   "curve"]
     .forEach(id => els[id] = document.getElementById(id));
 
   // ---- Ref-1909 scenario for a chain ----
@@ -305,6 +391,9 @@
 
     els.valApy.textContent = pct(r.valApy);
 
+    // Self-stake slider status — terse, zone-driven.
+    updateOwnStatus(toTokens(own), sym);
+
     // Chain parameters panel (read-only).
     els.pStaker.textContent = REF.stakerPct + "%";
     els.pIncentive.textContent = REF.incentivePct + "%";
@@ -316,16 +405,31 @@
     els.pStakerPot.textContent = fmtTok(sc.stakerPot) + " " + sym;
     els.pIncentivePot.textContent = fmtTok(sc.incentivePot) + " " + sym;
 
-    const rows = [
-      ["stream-staker", "Your share of the staker pool", fmtTok(r.valStaking) + " " + sym],
-      ["stream-incentive", "Self-stake incentive", fmtTok(r.incentive) + " " + sym],
-      ["total", "You keep / era", fmtTok(r.valEraTotal) + " " + sym],
-      ["", "Annualized (× " + r.epy.toFixed(0) + ")", fmtTok(r.valAnnual) + " " + sym],
-    ];
-    els.breakdownBody.innerHTML = rows.map(([cls, k, v]) =>
-      `<tr class="${cls}"><td class="label">${k}</td><td class="val">${v}</td></tr>`).join("");
+    // Reward-per-era stacked bar: staker | incentive segments, sized by share.
+    const total = r.valStaking + r.incentive;
+    const sFrac = total === 0n ? 0 : ratio(r.valStaking, total);
+    els.segStaker.style.width = (sFrac * 100).toFixed(2) + "%";
+    els.segIncentive.style.width = ((1 - sFrac) * 100).toFixed(2) + "%";
+    els.bStaker.textContent = fmtTok(r.valStaking) + " " + sym;
+    els.bIncentive.textContent = fmtTok(r.incentive) + " " + sym;
+    els.bTotal.textContent = fmtTok(r.valEraTotal) + " " + sym;
+    els.bAnnual.textContent = fmtTok(r.valAnnual) + " " + sym;
 
     drawCurve(c, sc, own);
+  }
+
+  // Slider zones: <min (warn) · min→optimum · optimum→cap · >cap (capped).
+  function updateOwnStatus(ownTok, sym) {
+    const { minTok, optimumTok, capTok } = REF;
+    const k = (n) => Math.round(n / 1000) + "k";
+    let zone = "", msg = "";
+    if (ownTok < minTok)        { zone = "below";   msg = "below min " + k(minTok); }
+    else if (ownTok < optimumTok) { zone = "";       msg = k(optimumTok - ownTok) + " to optimum"; }
+    else if (ownTok < capTok)   { zone = "optimum"; msg = k(capTok - ownTok) + " to cap"; }
+    else                        { zone = "capped";  msg = "capped · staker share only"; }
+    els.ownStatus.textContent = msg;
+    els.ownStatus.dataset.zone = zone;
+    els.ownRange.parentElement.dataset.zone = zone;
   }
 
   function drawCurve(c, sc, ownStake) {
@@ -397,6 +501,18 @@
     }
   }
 
+  function buildTicks(max) {
+    const k = (n) => Math.round(n / 1000) + "k";
+    const marks = [
+      [REF.minTok, "min"],
+      [REF.optimumTok, "opt"],
+      [REF.capTok, "cap"],
+    ];
+    els.ownTicks.innerHTML = marks.map(([v, name]) =>
+      `<span class="tick" style="left:${(v / max * 100).toFixed(2)}%"><b>${k(v)}</b>${name}</span>`
+    ).join("");
+  }
+
   function bindPair(numId, rangeId, max) {
     const num = els[numId], range = els[rangeId];
     range.max = max;
@@ -409,10 +525,10 @@
     decimals = c.tokenDecimals;
     const sym = c.tokenSymbol;
     els.unit1.textContent = sym; els.unit2.textContent = sym;
-    els.ownHint.textContent = `chain target ${REF.optimumTok.toLocaleString()} · cap ${REF.capTok.toLocaleString()} ${sym}`;
 
     const ownMax = Math.round(REF.capTok * 1.5);
     bindPair("own", "ownRange", ownMax);
+    buildTicks(ownMax);
     const nomMax = Math.round(toTokens(BigInt(c.totalStake)) / c.validatorCount * 2);
     bindPair("nom", "nomRange", nomMax);
 
