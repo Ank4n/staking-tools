@@ -18,6 +18,7 @@
 import type { TypedApi } from "polkadot-api";
 import { AccountId } from "polkadot-api";
 import { descriptors } from "../chains/index.js";
+import { mapPool, RPC_CONCURRENCY } from "../util/pool.js";
 import type {
   EraHealth,
   EraBoundary,
@@ -223,27 +224,6 @@ export async function reconstructEraHealth(
     allValidatorOwnStakes,
     pots,
   };
-}
-
-const RPC_CONCURRENCY = 12;
-
-async function mapPool<T, R>(
-  items: readonly T[],
-  concurrency: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const i = next++;
-      results[i] = await fn(items[i]);
-    }
-  }
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, worker),
-  );
-  return results;
 }
 
 async function readOwnStakes(

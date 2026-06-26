@@ -336,23 +336,30 @@
     var c = chain();
     var latest = c.eras[c.eras.length - 1];
     var stakes = state.distSet === "active" ? latest.activeValidatorOwnStakes : latest.allValidatorOwnStakes;
-    var unit = Math.pow(10, c.tokenDecimals);
+    var unit = BigInt(Math.pow(10, c.tokenDecimals));
     // Classify each validator once, by raw planck, into the first matching row.
-    var planck = stakes.map(function (s) { return Number(s); });
+    // Compare in BigInt: total stake in planck routinely exceeds 2^53, so Number
+    // would lose precision and misclassify the round-number "exact" rows.
+    var planck = stakes.map(function (s) { return BigInt(s); });
     var total = planck.length;
+    // Bucket bounds (lo/hi/exact) are whole-token numbers; scale to planck.
     function matches(b, p) {
-      if (b.exact != null) return p === b.exact * unit;
-      var t = p / unit;
-      if (b.lo != null && (b.exLo ? t <= b.lo : t < b.lo)) return false;
-      if (b.hi != null && (b.exHi ? t >= b.hi : t > b.hi)) return false;
+      if (b.exact != null) return p === BigInt(b.exact) * unit;
+      if (b.lo != null) { var lo = BigInt(b.lo) * unit; if (b.exLo ? p <= lo : p < lo) return false; }
+      if (b.hi != null) { var hi = BigInt(b.hi) * unit; if (b.exHi ? p >= hi : p > hi) return false; }
       return true;
     }
     var counts = BUCKETS.map(function (b) {
       return planck.filter(function (p) { return matches(b, p); }).length;
     });
     var maxCount = Math.max.apply(null, counts) || 1;
-    var ge10k = planck.filter(function (p) { return p / unit >= 10000; }).length;
-    var maxStake = total ? Math.max.apply(null, planck) / unit : 0;
+    var ge10kThr = BigInt(10000) * unit;
+    var ge10k = planck.filter(function (p) { return p >= ge10kThr; }).length;
+    // maxStake is display-only; Number-divide is fine here (loses <1 token).
+    var maxStake = total
+      ? planck.reduce(function (m, p) { return p > m ? p : m; }, 0n)
+      : 0n;
+    maxStake = Number(maxStake) / Math.pow(10, c.tokenDecimals);
 
     var scope = state.distSet === "active" ? "active set, era " + latest.era : "all registered";
     $("distHint").textContent = scope + " · " + fmtInt(total) + " validators · max " + fmtToken(maxStake) + " " + c.tokenSymbol;

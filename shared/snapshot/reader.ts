@@ -16,42 +16,14 @@ import type {
   NominatorExposure,
 } from "./types.js";
 import { SCHEMA_VERSION } from "./types.js";
+import { mapPool, RPC_CONCURRENCY } from "../util/pool.js";
 
 type Api = TypedApi<typeof descriptors>;
 
 const PERBILL_DENOM = 1_000_000_000;
 
-/** Max simultaneous per-validator RPC requests against a single node. */
-const RPC_CONCURRENCY = 12;
-
 function perbill(raw: number): Perbill {
   return { raw, fraction: raw / PERBILL_DENOM };
-}
-
-/**
- * Map `fn` over `items` with at most `concurrency` promises in flight at once,
- * preserving input order in the result. Keeps a busy node saturated without
- * firing hundreds of requests simultaneously.
- */
-async function mapPool<T, R>(
-  items: readonly T[],
-  concurrency: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const i = next++;
-      results[i] = await fn(items[i]);
-    }
-  }
-  const workers = Array.from(
-    { length: Math.min(concurrency, items.length) },
-    worker,
-  );
-  await Promise.all(workers);
-  return results;
 }
 
 /** Decode a BudgetKey Binary to a readable label: utf8 if printable, else hex. */
