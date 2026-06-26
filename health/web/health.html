@@ -112,6 +112,15 @@
   .hovertip .ht-label { color: var(--muted); }
   .hovertip .ht-val { font-size: 14px; font-weight: 600; }
 
+  /* Playful placeholder card filling the empty grid slot. */
+  .card.soon { cursor: default; border-style: dashed; }
+  .card.soon::before { display: none; }
+  .soon-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 12px; color: var(--faint); padding: 20px 0; }
+  .soon-emoji { font-size: 40px; filter: grayscale(0.2); animation: bob 3s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .soon-text { font-family: var(--mono); font-size: 12px; line-height: 1.6; letter-spacing: 0.02em; }
+
   footer.basis { font-family: var(--mono); font-size: 11px; color: var(--faint);
     margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); }
   footer.basis code { color: var(--muted); }
@@ -136,6 +145,44 @@
   </header>
 
   <div class="grid" id="grid">
+    <!-- Row 1: issuance — reward pots + buffer (both grow over time). -->
+    <section class="card" data-card="inflation">
+      <div class="card-head">Reward pots <span class="hint" id="inflationHint"></span></div>
+      <div class="kpis spread" id="inflationKpis"></div>
+      <canvas id="inflationChart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>staker rewards</span>
+        <span><i style="background:var(--accent-2)"></i>validator incentive</span>
+      </div>
+    </section>
+
+    <section class="card" data-card="buffer">
+      <div class="card-head">Buffer
+        <span class="info" tabindex="0" role="button" aria-label="about this metric"
+          data-tip="DAP buffer account balance — accumulates slashes, fees & dust. Grows each era.">i</span>
+      </div>
+      <div class="kpis spread" id="bufferKpis"></div>
+      <canvas id="bufferChart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>prior balance</span>
+        <span><i style="background:var(--accent-2)"></i>this era's growth (Δ)</span>
+      </div>
+    </section>
+
+    <!-- Row 2: self-stake + election. -->
+    <section class="card" data-card="staking2">
+      <div class="card-head">Validator self-stake
+        <span class="info" id="distInfo" tabindex="0" role="button" aria-label="snapshot block"
+          data-tip="">i</span>
+        <span class="seg" id="distSeg">
+          <button data-set="active" aria-pressed="false">active</button>
+          <button data-set="all" aria-pressed="true">all</button>
+        </span>
+      </div>
+      <div class="card-head hint" id="distHint" style="margin-top:2px"></div>
+      <table class="dist" id="distTable"></table>
+    </section>
+
     <section class="card" data-card="election">
       <div class="card-head">Election
         <span class="info" tabindex="0" role="button" aria-label="about this metric"
@@ -150,6 +197,7 @@
       </div>
     </section>
 
+    <!-- Row 3: participants + a playful placeholder. -->
     <section class="card" data-card="staking1">
       <div class="card-head">Staking — participants &amp; unbonding</div>
       <div class="kpis spread" id="staking1Kpis"></div>
@@ -161,27 +209,11 @@
       </div>
     </section>
 
-    <section class="card" data-card="staking2">
-      <div class="card-head">Validator self-stake
-        <span class="info" id="distInfo" tabindex="0" role="button" aria-label="snapshot block"
-          data-tip="">i</span>
-        <span class="seg" id="distSeg">
-          <button data-set="active" aria-pressed="false">active</button>
-          <button data-set="all" aria-pressed="true">all</button>
-        </span>
-      </div>
-      <div class="card-head hint" id="distHint" style="margin-top:2px"></div>
-      <table class="dist" id="distTable"></table>
-    </section>
-
-    <section class="card" data-card="inflation">
-      <div class="card-head">Inflation <span class="hint" id="inflationHint"></span></div>
-      <div class="kpis spread" id="inflationKpis"></div>
-      <canvas id="inflationChart"></canvas>
-      <div class="legend">
-        <span><i style="background:var(--accent)"></i>staker rewards</span>
-        <span><i style="background:var(--accent-2)"></i>validator incentive</span>
-        <span><i style="background:var(--warn)"></i>buffer Δ</span>
+    <section class="card soon" data-card="soon" aria-hidden="true">
+      <div class="card-head">Coming soon</div>
+      <div class="soon-body">
+        <div class="soon-emoji">🔮</div>
+        <div class="soon-text">a wild stat appears here<br>in a future era…</div>
       </div>
     </section>
   </div>

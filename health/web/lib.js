@@ -116,11 +116,17 @@
     var fr = axesRange(p.ctx, p.w, p.h, lo, hi);
     function yOf(v) { return fr.y0 - (fr.y0 - fr.y1) * ((v - lo) / (hi - lo)); }
     var n = eras.length, bw = (fr.x1 - fr.x0) / n;
+    var hits = [];
     for (var i = 0; i < n; i++) {
       var cx = fr.x0 + bw * (i + 0.5);
       var yb = yOf(backing[i]);
+      var rx = cx - bw * 0.28, rw = bw * 0.56;
       p.ctx.fillStyle = cssVar("--accent");
-      p.ctx.fillRect(cx - bw * 0.28, yb, bw * 0.56, fr.y0 - yb);
+      p.ctx.fillRect(rx, yb, rw, fr.y0 - yb);
+      var mult = thr[i] > 0 ? (backing[i] / thr[i]) : 0;
+      hits.push({ rect: { x: rx, y: yb, w: rw, h: fr.y0 - yb },
+        color: cssVar("--accent"), label: "min stake", era: eras[i].era,
+        text: fmtToken(backing[i]) + " " + c.tokenSymbol + (mult ? "  (" + mult.toFixed(2) + "× floor)" : "") });
     }
     // threshold floor as a dashed warn line across the frame
     var yt = yOf(thr[thr.length - 1]);
@@ -129,6 +135,7 @@
     p.ctx.beginPath(); p.ctx.moveTo(fr.x0, yt); p.ctx.lineTo(fr.x1, yt); p.ctx.stroke();
     p.ctx.setLineDash([]);
     xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }));
+    canvas._hits = hits; canvas._cssW = p.w; attachHover(canvas);
   }
 
   function drawStaking1(canvas, cssH) {
@@ -194,16 +201,21 @@
       var scale = (canvas._cssW || rect.width) / rect.width;
       var mx = (ev.clientX - rect.left) * scale;
       var my = (ev.clientY - rect.top) * scale;
-      var best = null, bestD = 1e9;
+      // Prefer rectangle containment (bar charts): any point inside a bar's box
+      // wins. Falls back to nearest-point within a radius (line charts).
+      var hit = null, bestD = 1e9;
       for (var i = 0; i < hits.length; i++) {
-        var dx = hits[i].x - mx, dy = hits[i].y - my, d = dx * dx + dy * dy;
-        if (d < bestD) { bestD = d; best = hits[i]; }
+        var h = hits[i];
+        if (h.rect) {
+          if (mx >= h.rect.x && mx <= h.rect.x + h.rect.w &&
+              my >= h.rect.y && my <= h.rect.y + h.rect.h) { hit = h; break; }
+        } else {
+          var dx = h.x - mx, dy = h.y - my, d = dx * dx + dy * dy;
+          if (d < bestD) { bestD = d; if (d <= 18 * 18) hit = h; }
+        }
       }
-      if (best && bestD <= 18 * 18) {
-        showTip(ev.clientX, ev.clientY, best);
-      } else {
-        hideTip();
-      }
+      if (hit) showTip(ev.clientX, ev.clientY, hit);
+      else hideTip();
     });
     canvas.addEventListener("mouseleave", hideTip);
   }
@@ -237,31 +249,69 @@
   function drawInflation(canvas, cssH) {
     var c = chain(), eras = c.eras;
     var p = prep(canvas, cssH || 150);
-    // Per-era finalized pots: staker reward + validator incentive (these ARE per-era).
-    // Buffer delta vs previous era approximates buffer-bound inflation.
+    // Per-era reward pots (both ARE per-era on-chain values): staker rewards +
+    // validator incentive budget, stacked. Buffer now lives in its own card.
     var staker = eras.map(function (e) { return tok(e.totalStakerReward, c); });
     var incent = eras.map(function (e) { return tok(e.validatorIncentiveBudget, c); });
-    var bufDelta = eras.map(function (e, i) {
-      if (i === 0) return 0;
-      return Math.max(0, tok(e.pots.buffer, c) - tok(eras[i - 1].pots.buffer, c));
-    });
-    var totals = eras.map(function (_, i) { return staker[i] + incent[i] + bufDelta[i]; });
+    var totals = eras.map(function (_, i) { return staker[i] + incent[i]; });
     var max = Math.max.apply(null, totals) * 1.12 || 1;
     var fr = axes(p.ctx, p.w, p.h, { max: max });
     var n = eras.length, bw = (fr.x1 - fr.x0) / n;
-    var cols = [cssVar("--accent"), cssVar("--accent-2"), cssVar("--warn")];
+    var hits = [];
     for (var i = 0; i < n; i++) {
       var cx = fr.x0 + bw * (i + 0.5);
-      var segs = [staker[i], incent[i], bufDelta[i]];
+      var segs = [
+        { v: staker[i], color: cssVar("--accent"), label: "staker rewards" },
+        { v: incent[i], color: cssVar("--accent-2"), label: "validator incentive" }
+      ];
       var acc = 0;
-      for (var s = 0; s < 3; s++) {
-        var hs = (fr.y0 - fr.y1) * (segs[s] / max);
-        p.ctx.fillStyle = cols[s];
-        p.ctx.fillRect(cx - bw * 0.3, fr.y0 - acc - hs, bw * 0.6, hs);
+      for (var s = 0; s < segs.length; s++) {
+        var hs = (fr.y0 - fr.y1) * (segs[s].v / max);
+        var ry = fr.y0 - acc - hs;
+        p.ctx.fillStyle = segs[s].color;
+        p.ctx.fillRect(cx - bw * 0.3, ry, bw * 0.6, hs);
+        // hit-test the whole segment rectangle (min 6px tall so thin/zero
+        // segments are still hoverable).
+        hits.push({ rect: { x: cx - bw * 0.3, y: ry, w: bw * 0.6, h: Math.max(hs, 6) },
+          color: segs[s].color, label: segs[s].label, era: eras[i].era,
+          text: fmtToken(segs[s].v) + " " + c.tokenSymbol });
         acc += hs;
       }
     }
     xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }));
+    canvas._hits = hits; canvas._cssW = p.w; attachHover(canvas);
+  }
+
+  function drawBuffer(canvas, cssH) {
+    var c = chain(), eras = c.eras;
+    var p = prep(canvas, cssH || 150);
+    // Cumulative DAP buffer balance per era (a stock that keeps growing). Each
+    // bar's bright TOP segment is that era's growth (Δ = balance - prevBalance);
+    // the darker base is the prior balance. Hover shows exact balance + Δ.
+    var bal = eras.map(function (e) { return tok(e.pots.buffer, c); });
+    var delta = eras.map(function (e, i) { return i === 0 ? 0 : Math.max(0, bal[i] - bal[i - 1]); });
+    var max = Math.max.apply(null, bal) * 1.1 || 1;
+    var fr = axes(p.ctx, p.w, p.h, { max: max });
+    var n = eras.length, bw = (fr.x1 - fr.x0) / n;
+    var base = cssVar("--accent"), top = cssVar("--accent-2");
+    var hits = [];
+    for (var i = 0; i < n; i++) {
+      var cx = fr.x0 + bw * (i + 0.5);
+      var yTotal = fr.y0 - (fr.y0 - fr.y1) * (bal[i] / max);
+      var yBase = fr.y0 - (fr.y0 - fr.y1) * ((bal[i] - delta[i]) / max);
+      // base segment (prior balance)
+      p.ctx.fillStyle = base;
+      p.ctx.fillRect(cx - bw * 0.3, yBase, bw * 0.6, fr.y0 - yBase);
+      // delta segment (this era's growth) on top, brighter
+      p.ctx.fillStyle = top;
+      p.ctx.fillRect(cx - bw * 0.3, yTotal, bw * 0.6, yBase - yTotal);
+      // whole bar is one hit target -> shows balance + Δ anywhere on it
+      hits.push({ rect: { x: cx - bw * 0.3, y: yTotal, w: bw * 0.6, h: fr.y0 - yTotal },
+        color: top, label: "buffer", era: eras[i].era,
+        text: fmtToken(bal[i]) + " " + c.tokenSymbol + "  (Δ " + (delta[i] > 0 ? "+" : "") + fmtToken(delta[i]) + ")" });
+    }
+    xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }));
+    canvas._hits = hits; canvas._cssW = p.w; attachHover(canvas);
   }
 
   // ---- distribution table ----
@@ -358,17 +408,22 @@
         deltaChip(tok(last.unbonding.totalValue, c), prev ? tok(prev.unbonding.totalValue, c) : null)) +
       kpi("unbonding ledgers", fmtInt(last.unbonding.ledgerCount));
 
-    // Inflation
+    // Inflation: staker rewards + validator incentive (per-era reward pots).
     var stakerR = tok(last.totalStakerReward, c), incentR = tok(last.validatorIncentiveBudget, c);
-    var bufDelta = prev ? Math.max(0, tok(last.pots.buffer, c) - tok(prev.pots.buffer, c)) : 0;
-    var dayTotal = stakerR + incentR + bufDelta;
-    $("inflationHint").textContent = "per era (≈ daily)";
+    var rewardTotal = stakerR + incentR;
+    $("inflationHint").textContent = "per-era reward pots";
     $("inflationKpis").innerHTML =
-      kpi("total / era", fmtToken(dayTotal) + ' <small>' + c.tokenSymbol + '</small>') +
+      kpi("total / era", fmtToken(rewardTotal) + ' <small>' + c.tokenSymbol + '</small>') +
       kpi("staker rewards", fmtToken(stakerR) + ' <small>' + c.tokenSymbol + '</small>',
         deltaChip(stakerR, prev ? tok(prev.totalStakerReward, c) : null)) +
-      kpi("validator incentive", fmtToken(incentR) + ' <small>' + c.tokenSymbol + '</small>') +
-      kpi("buffer", fmtToken(tok(last.pots.buffer, c)) + ' <small>' + c.tokenSymbol + '</small>');
+      kpi("validator incentive", fmtToken(incentR) + ' <small>' + c.tokenSymbol + '</small>');
+
+    // Buffer: cumulative DAP buffer balance + this era's growth.
+    var bufBal = tok(last.pots.buffer, c);
+    var bufDelta = prev ? (bufBal - tok(prev.pots.buffer, c)) : 0;
+    $("bufferKpis").innerHTML =
+      kpi("balance — era " + last.era, fmtToken(bufBal) + ' <small>' + c.tokenSymbol + '</small>') +
+      kpi("Δ this era", (bufDelta >= 0 ? "+" : "") + fmtToken(bufDelta) + ' <small>' + c.tokenSymbol + '</small>');
   }
 
   // ---- zoom overlay ----
@@ -377,8 +432,10 @@
       legend: '<span><i style="background:var(--accent)"></i>min backing of elected set</span><span><i style="background:var(--warn)"></i>min-score floor</span>' },
     staking1: { fn: drawStaking1, title: "Nominators / registered validators / unbonding (trend)",
       legend: '<span><i style="background:var(--accent)"></i>nominators</span><span><i style="background:var(--accent-2)"></i>registered validators</span><span><i style="background:var(--warn)"></i>unbonding (own scale)</span>' },
-    inflation: { fn: drawInflation, title: "Inflation per era — staker / incentive / buffer Δ",
-      legend: '<span><i style="background:var(--accent)"></i>staker rewards</span><span><i style="background:var(--accent-2)"></i>validator incentive</span><span><i style="background:var(--warn)"></i>buffer Δ</span>' }
+    inflation: { fn: drawInflation, title: "Per-era reward pots — staker rewards / validator incentive",
+      legend: '<span><i style="background:var(--accent)"></i>staker rewards</span><span><i style="background:var(--accent-2)"></i>validator incentive</span>' },
+    buffer: { fn: drawBuffer, title: "DAP buffer balance per era (cumulative)",
+      legend: '<span><i style="background:var(--accent)"></i>prior balance</span><span><i style="background:var(--accent-2)"></i>this era\'s growth (Δ)</span>' }
   };
 
   function openZoom(card) {
@@ -396,6 +453,7 @@
     drawElection($("electionChart"));
     drawStaking1($("staking1Chart"));
     drawInflation($("inflationChart"));
+    drawBuffer($("bufferChart"));
     renderDist();
   }
   function renderAll() { renderTitle(); renderKpis(); renderCharts(); renderFooter(); }
