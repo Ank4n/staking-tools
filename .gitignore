@@ -9,3 +9,4 @@ validator/web/data.json
 expenses/web/expenses.built.html
 site
 .DS_Store
+.env
