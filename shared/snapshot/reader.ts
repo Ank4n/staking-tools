@@ -67,6 +67,8 @@ function decodeBudgetKey(bin: { asBytes(): Uint8Array; asHex(): string }): strin
 export interface SnapshotConnection {
   api: Api;
   meta: ChainMeta;
+  /** Low-level JSON-RPC passthrough (e.g. `chain_getBlockHash`). */
+  request: <Reply = unknown>(method: string, params: unknown[]) => Promise<Reply>;
   destroy: () => void;
 }
 
@@ -88,7 +90,12 @@ export async function connect(chain: ChainConfig): Promise<SnapshotConnection> {
     ss58Prefix: chain.ss58Prefix,
   };
 
-  return { api, meta, destroy: () => client.destroy() };
+  return {
+    api,
+    meta,
+    request: (method, params) => client._request(method, params),
+    destroy: () => client.destroy(),
+  };
 }
 
 /** Chain-wide state that doesn't vary per era (captured at snapshot time). */

@@ -1,0 +1,183 @@
+<title>Era Health</title>
+<style>
+  :root {
+    --ground: #0E1116; --panel: #161B22; --panel-2: #1C232D; --line: #283039;
+    --text: #E6EDF3; --muted: #8B97A6; --faint: #5A6573;
+    --accent: #E6007A; --accent-2: #2DD4BF; --warn: #E3B341; --ok: #3FB950; --bad: #F85149;
+    --glow: 230,0,122;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  :root[data-theme="light"] {
+    --ground: #F4F6F9; --panel: #FFFFFF; --panel-2: #EEF1F5; --line: #DDE3EA;
+    --text: #1A2129; --muted: #5A6573; --faint: #97A1AE;
+    --accent: #D6006F; --accent-2: #119C8B; --warn: #B5811A; --ok: #1A7F37; --bad: #CF222E;
+    --glow: 214,0,111;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #F4F6F9; --panel: #FFFFFF; --panel-2: #EEF1F5; --line: #DDE3EA;
+      --text: #1A2129; --muted: #5A6573; --faint: #97A1AE;
+      --accent: #D6006F; --accent-2: #119C8B; --warn: #B5811A; --ok: #1A7F37; --bad: #CF222E; --glow: 214,0,111;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background:
+      radial-gradient(1100px 520px at 85% -15%, rgba(var(--glow),0.08), transparent 60%), var(--ground);
+    color: var(--text); font-family: var(--sans); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 36px) 60px; }
+
+  header.masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+  h1 { font-family: var(--mono); font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  .controls { display: flex; align-items: center; gap: 10px; }
+  .theme-toggle { font-family: var(--mono); font-size: 16px; line-height: 1; width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 9px; }
+  .theme-toggle:hover { color: var(--text); border-color: var(--faint); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+
+  /* 2×2 card grid — equal-height rows, cards stretch to fill their row. */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 18px; align-items: stretch; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; grid-auto-rows: auto; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px 16px; position: relative; overflow: hidden; cursor: zoom-in;
+    display: flex; flex-direction: column; }
+  /* Push the main visual (chart/table) to take the remaining height so paired
+     cards align even when their KPI rows differ in length. */
+  .card > canvas, .card > table.dist { margin-top: auto; }
+  .card::before { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(420px 200px at 0% 0%, rgba(var(--glow),0.07), transparent 62%); pointer-events: none; }
+  .card > * { position: relative; }
+  .card-head { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 4px; display: flex; align-items: baseline; gap: 8px; }
+  .card-head .hint { font-size: 11px; color: var(--faint); text-transform: none; letter-spacing: 0; }
+  /* (i) info chip with a CSS tooltip on hover/focus. */
+  .info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
+    border-radius: 50%; border: 1px solid var(--line); color: var(--faint); font-size: 9px; font-style: normal;
+    font-family: var(--mono); text-transform: none; cursor: help; position: relative; user-select: none; }
+  .info:hover, .info:focus-visible { color: var(--text); border-color: var(--faint); outline: none; }
+  /* Drop the tooltip BELOW the icon: the card clips overflow at its top edge,
+     and there's ample room downward. */
+  .info::after { content: attr(data-tip); position: absolute; top: calc(100% + 7px); left: 0;
+    white-space: nowrap; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; font-size: 11px; letter-spacing: 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35); opacity: 0; pointer-events: none; transition: opacity 0.12s; z-index: 5; }
+  .info:hover::after, .info:focus-visible::after { opacity: 1; }
+
+  /* KPI row */
+  .kpis { display: flex; flex-wrap: wrap; gap: 14px 26px; margin: 10px 0 14px; }
+  .kpi .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+  .kpi .v { font-family: var(--mono); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+  .kpi .v small { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .kpi .d { font-family: var(--mono); font-size: 11px; }
+  .up { color: var(--ok); } .down { color: var(--bad); } .flat { color: var(--faint); }
+
+  canvas { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-left: auto; }
+  .seg button { font-family: var(--mono); font-size: 11px; background: var(--panel); color: var(--muted);
+    border: 0; padding: 5px 11px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  table.dist { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; margin-top: 4px; }
+  table.dist th { text-align: right; color: var(--faint); font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 6px; }
+  table.dist th:first-child, table.dist td:first-child { text-align: left; }
+  table.dist td { padding: 4px 6px; border-top: 1px solid var(--line); }
+  table.dist td.bar-cell { width: 38%; }
+  .bar { height: 9px; border-radius: 3px; background: var(--accent); }
+  .cum { color: var(--accent-2); }
+  /* Exact round-number targets: faint, italicised sub-rows (not buckets). */
+  .exact { color: var(--faint); font-style: italic; }
+
+  footer.basis { font-family: var(--mono); font-size: 11px; color: var(--faint);
+    margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); }
+  footer.basis code { color: var(--muted); }
+
+  /* Zoom overlay */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.62); display: none; align-items: center;
+    justify-content: center; padding: 4vh 4vw; z-index: 50; }
+  .overlay.open { display: flex; }
+  .overlay .frame { background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px 26px; width: min(1000px, 96vw); max-height: 92vh; overflow: auto; position: relative; cursor: auto; }
+  .overlay .close { position: absolute; top: 12px; right: 14px; font-family: var(--mono); font-size: 18px;
+    background: none; border: 0; color: var(--muted); cursor: pointer; }
+  .overlay .close:hover { color: var(--text); }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand"><span class="dot"></span><h1>Era Health</h1></div>
+    <div class="controls">
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle light/dark">◐</button>
+    </div>
+  </header>
+
+  <div class="grid" id="grid">
+    <section class="card" data-card="election">
+      <div class="card-head">Election <span class="hint" id="electionHint"></span></div>
+      <div class="kpis" id="electionKpis"></div>
+      <canvas id="electionChart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>min backing of elected set</span>
+        <span><i style="background:var(--warn)"></i>min-score floor</span>
+      </div>
+    </section>
+
+    <section class="card" data-card="staking1">
+      <div class="card-head">Staking — participants &amp; unbonding</div>
+      <div class="kpis" id="staking1Kpis"></div>
+      <canvas id="staking1Chart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>nominators</span>
+        <span><i style="background:var(--accent-2)"></i>registered validators</span>
+        <span><i style="background:var(--warn)"></i>unbonding (tokens)</span>
+      </div>
+    </section>
+
+    <section class="card" data-card="staking2">
+      <div class="card-head">Validator self-stake
+        <span class="info" id="distInfo" tabindex="0" role="button" aria-label="snapshot block"
+          data-tip="">i</span>
+        <span class="seg" id="distSeg">
+          <button data-set="active" aria-pressed="false">active</button>
+          <button data-set="all" aria-pressed="true">all</button>
+        </span>
+      </div>
+      <div class="card-head hint" id="distHint" style="margin-top:2px"></div>
+      <table class="dist" id="distTable"></table>
+    </section>
+
+    <section class="card" data-card="inflation">
+      <div class="card-head">Inflation <span class="hint" id="inflationHint"></span></div>
+      <div class="kpis" id="inflationKpis"></div>
+      <canvas id="inflationChart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>staker rewards</span>
+        <span><i style="background:var(--accent-2)"></i>validator incentive</span>
+        <span><i style="background:var(--warn)"></i>buffer Δ</span>
+      </div>
+    </section>
+  </div>
+
+  <footer class="basis" id="basis"></footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="frame">
+    <button class="close" id="overlayClose" aria-label="Close">✕</button>
+    <div class="card-head" id="overlayTitle"></div>
+    <canvas id="overlayChart"></canvas>
+    <div class="legend" id="overlayLegend"></div>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+</script>
+<script>
+// __LIB__
+</script>

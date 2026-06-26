@@ -69,6 +69,24 @@ const APPS: App[] = [
       );
     },
   },
+  {
+    slug: "health",
+    title: "Era Health",
+    blurb: "Election, staking, self-stake distribution & inflation across the last 7 eras.",
+    icon: "🩺",
+    build: () => {
+      // Refresh the embedded data from snapshots, then inline into the template.
+      execFileSync("sh", ["-c", "pnpm exec tsx health/cli/embed.ts > health/web/data.json"], {
+        cwd: ROOT,
+        stdio: "inherit",
+      });
+      execFileSync("pnpm", ["exec", "tsx", "health/cli/build-web.ts"], {
+        cwd: ROOT,
+        stdio: "inherit",
+      });
+      return readFileSync(join(ROOT, "health", "web", "health.built.html"), "utf8");
+    },
+  },
 ];
 
 function landingPage(apps: App[]): string {

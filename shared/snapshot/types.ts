@@ -78,6 +78,102 @@ export interface NominatorExposure {
   value: string;
 }
 
+/**
+ * An NPoS election score, exactly as stored on-chain
+ * (`sp_npos_elections::ElectionScore`). All values are planck strings.
+ */
+export interface ElectionScore {
+  /** Minimal backing stake among all winners (maximize). */
+  minimalStake: string;
+  /** Sum of total backing across all winners (maximize). */
+  sumStake: string;
+  /** Sum of squared backings (variance; minimize). */
+  sumStakeSquared: string;
+}
+
+/** Summary of all unbonding chunks across every staking ledger. */
+export interface UnbondingSummary {
+  /** Number of ledgers that have at least one unlocking chunk. */
+  ledgerCount: number;
+  /** Total number of unlocking chunks across all ledgers. */
+  chunkCount: number;
+  /** Sum of all unlocking chunk values (planck string). */
+  totalValue: string;
+}
+
+/** Native balances of the three DAP issuance pots, at `balanceBlock`. */
+export interface PotBalances {
+  /** DAP buffer account free balance (planck string). */
+  buffer: string;
+  /** Staker-rewards general pot free balance (planck string). */
+  stakerReward: string;
+  /** Validator-incentive general pot free balance (planck string). */
+  validatorIncentive: string;
+}
+
+/**
+ * Era-boundary reconstruction metadata: where the live (point-in-time) reads
+ * for this era were taken. Filled by the `health` reconstruct CLI, which finds
+ * the era's first block via Subscan and reads state a few blocks earlier (the
+ * general pots drain into era pots exactly at the transition block).
+ */
+export interface EraBoundary {
+  /** First block of this era (from Subscan, by `ActiveEra.start` timestamp). */
+  block: number;
+  /** Block hash for `block`. */
+  hash: string;
+  /** Blocks subtracted from `block` to read pre-drain balances/state. */
+  offset: number;
+  /** The block actually read (`block - offset`). */
+  balanceBlock: number;
+  /** Block hash for `balanceBlock`. */
+  balanceHash: string;
+  /** `ActiveEra.index` observed at `balanceBlock` (sanity check; should be era-1's tail). */
+  observedEra: number | null;
+}
+
+/**
+ * Point-in-time "health" reads reconstructed at an era's boundary block. These
+ * are NOT per-era on-chain history — they are live storage values captured at
+ * the reconstructed boundary block. Optional: present only after the `health`
+ * reconstruct CLI has run for this era.
+ */
+export interface EraHealth {
+  /** Where/when these reads were taken. */
+  boundary: EraBoundary;
+
+  /** Election round counter (`MultiBlockElection.Round`). */
+  electionRound: number | null;
+  /** Feasibility threshold (`MultiBlockElectionVerifier.MinimumScore`). */
+  minimumScore: ElectionScore | null;
+  /** Score of the queued/accepted solution, if present. */
+  queuedSolutionScore: ElectionScore | null;
+
+  /** `CounterForNominators`. */
+  nominatorCount: number;
+  /** `CounterForValidators` (intending validators, not the active set). */
+  validatorCount: number;
+  /** `MinimumActiveStake` — min stake that got exposed (planck string). */
+  minimumActiveStake: string;
+  /** `MinNominatorBond` (planck string). */
+  minNominatorBond: string;
+  /** `MinValidatorBond` (planck string). */
+  minValidatorBond: string;
+
+  /** Unbonding across all ledgers. */
+  unbonding: UnbondingSummary;
+
+  /**
+   * Own self-stake (ledger.active, planck strings) of every account in
+   * `Validators` storage — the full registered set, not just the active era's
+   * exposed validators. The app buckets these.
+   */
+  allValidatorOwnStakes: string[];
+
+  /** DAP pot balances at `boundary.balanceBlock`. */
+  pots: PotBalances;
+}
+
 /** Per-validator data for an era. */
 export interface ValidatorEra {
   /** Validator stash address. */
@@ -154,6 +250,13 @@ export interface EraSnapshot {
 
   /** Per-validator data for the era. */
   validators: ValidatorEra[];
+
+  /**
+   * Reconstructed point-in-time health reads at this era's boundary block.
+   * Optional: populated by the `health` reconstruct CLI; absent on snapshots
+   * taken by the plain `snapshot` CLI.
+   */
+  health?: EraHealth;
 }
 
 /** The index file: one per chain, lists which eras have shards. */
