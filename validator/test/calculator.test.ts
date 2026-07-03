@@ -85,7 +85,14 @@ for (const chain of CHAINS) {
       sum += calc;
       checked++;
     }
-    assert.ok(checked > 0, "expected at least one validator with a weight");
+    // The incentive params can be configured (optimum/cap non-zero) while the
+    // feature is not yet live — every validator's weight is still null and the
+    // on-chain sum is zero (currently the case on PAH). Treat that dormant state
+    // like "off": there's nothing to reproduce, only the zero sum to confirm.
+    if (checked === 0) {
+      assert.equal(s.sumIncentiveWeight, "0", "expected zero sum when no weights populated");
+      return;
+    }
     // The recomputed sum must equal on-chain ErasSumValidatorIncentiveWeight.
     assert.equal(sum.toString(), s.sumIncentiveWeight, "sum weight mismatch");
   });
