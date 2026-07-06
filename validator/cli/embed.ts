@@ -45,6 +45,28 @@ interface EmbedChain {
    * on chains where the incentive is currently off and stores no weights.
    */
   ownStakes: string[];
+  /**
+   * Inflation-per-era (planck strings) for the last few eras, newest first,
+   * INCLUDING this era. The UI takes the median of the others as a steady-state
+   * baseline to flag DAP drip catch-up eras (whose reward pot carries backlog).
+   */
+  recentInflation: string[];
+}
+
+/** Inflation issued in an era = staker reward pot scaled up by 1/staker-share. */
+function inflationOf(s: {
+  totalStakerReward: string;
+  validatorIncentiveBudget: string;
+  dapParams: { budgetAllocation: Record<string, { raw: number }> };
+}): bigint {
+  const alloc = s.dapParams.budgetAllocation;
+  const stakerRaw = alloc.staker_rewards?.raw ?? 0;
+  const incRaw = alloc.validator_incentive?.raw ?? 0;
+  if (stakerRaw > 0)
+    return (BigInt(s.totalStakerReward) * 1_000_000_000n) / BigInt(stakerRaw);
+  if (incRaw > 0)
+    return (BigInt(s.validatorIncentiveBudget) * 1_000_000_000n) / BigInt(incRaw);
+  return 0n;
 }
 
 async function buildChain(key: string): Promise<EmbedChain | null> {
@@ -82,6 +104,15 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
     budgetAllocation[k] = p.raw;
   }
 
+  // Last few eras' inflation, newest first, as a steady-state baseline for the UI.
+  const RECENT = 6;
+  const recentEras = eras.slice(-RECENT).reverse();
+  const recentInflation: string[] = [];
+  for (const e of recentEras) {
+    const es = e === era ? s : await readEra(chain, e);
+    if (es) recentInflation.push(inflationOf(es).toString());
+  }
+
   return {
     chainKey: s.chain.chainKey,
     chainName: s.chain.chainName,
@@ -102,6 +133,7 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
     budgetAllocation,
     sampleValidators,
     ownStakes: s.validators.map((v) => v.ownStake),
+    recentInflation,
   };
 }
 

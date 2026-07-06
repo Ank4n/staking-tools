@@ -165,6 +165,19 @@
   .src { font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px;
     border-radius: 5px; border: 1px solid var(--line); margin-left: 7px; vertical-align: middle; white-space: nowrap; }
   .src.era { color: var(--accent-2); border-color: rgba(45,212,191,0.30); }
+  .src.warn { color: var(--warn); border-color: rgba(227,179,65,0.35); cursor: help; }
+  /* Instant custom tooltip (native title has an unavoidable ~1s delay). */
+  .tip { position: relative; }
+  .tip::after {
+    content: attr(data-tip);
+    position: absolute; left: 0; top: calc(100% + 6px); z-index: 20;
+    width: max-content; max-width: 260px; white-space: normal;
+    font-family: var(--sans); font-size: 11.5px; line-height: 1.4; letter-spacing: 0; text-transform: none;
+    color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 7px; padding: 8px 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    opacity: 0; transform: translateY(-2px); pointer-events: none; transition: opacity 0.1s;
+  }
+  .tip:hover::after, .tip:focus-visible::after { opacity: 1; transform: none; }
 
   /* --- Run-N-validators block, inside the hero card --- */
   /* Sits below the self-stake control: a count stepper + the ×N totals it drives. */
@@ -334,7 +347,7 @@
       <div class="row-stat"><span class="k">Validators</span><span class="v" id="pValidators">—</span></div>
       <div class="row-stat"><span class="k">Total self-stake</span><span class="v" id="pTotalSelf">—</span></div>
       <div class="row-stat"><span class="k">Total stake</span><span class="v" id="pTotalStake">—</span></div>
-      <div class="row-stat"><span class="k">Inflation / era</span><span class="v" id="pInflation">—</span></div>
+      <div class="row-stat"><span class="k">Inflation / era <span class="src warn tip" id="pInflationFlag" tabindex="0" hidden>Anomaly</span></span><span class="v" id="pInflation">—</span></div>
       <div class="row-stat"><span class="k">Staker pool / era</span><span class="v" id="pStakerPot">—</span></div>
       <div class="row-stat"><span class="k">Incentive pot / era</span><span class="v teal" id="pIncentivePot">—</span></div>
     </div>
@@ -416,7 +429,7 @@
   const els = {};
   ["valApy","apyBasis","ownStatus","ownTicks","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange",
    "segStaker","segIncentive","bStaker","bIncentive","bTotal","bAnnual",
-   "pEra","pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pValidators","pTotalSelf","pTotalStake","pInflation","pStakerPot","pIncentivePot",
+   "pEra","pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pValidators","pTotalSelf","pTotalStake","pInflation","pInflationFlag","pStakerPot","pIncentivePot",
    "splitMinus","splitPlus","splitN","totalStake","bAnnualCalc",
    "curve"]
     .forEach(id => els[id] = document.getElementById(id));
@@ -532,7 +545,12 @@
     els.pValidators.textContent = c.validatorCount.toLocaleString();
     els.pTotalSelf.textContent = fmtTok(totalSelfStake) + " " + sym;
     els.pTotalStake.textContent = fmtTok(BigInt(c.totalStake)) + " " + sym;
-    els.pInflation.textContent = fmtTok(BigInt(Math.round(sc.per1 * 100))) + " " + sym;
+    const inflation = BigInt(Math.round(sc.per1 * 100));
+    els.pInflation.textContent = fmtTok(inflation) + " " + sym;
+    // Flag DAP drip catch-up eras: the reward pot carries accumulated backlog, so
+    // this era's inflation runs far above steady state. Baseline = median of the
+    // OTHER recent eras (recentInflation[0] is this era). Value is left truthful.
+    flagInflation(inflation, c.recentInflation, sym);
     els.pStakerPot.textContent = fmtTok(sc.stakerPot) + " " + sym;
     els.pIncentivePot.textContent = fmtTok(sc.incentivePot) + " " + sym;
 
@@ -552,6 +570,30 @@
       : "";
 
     drawCurve(c, sc, own);
+  }
+
+  // Show/hide the "Anomaly" flag on Inflation / era. `recent` is newest-first,
+  // planck strings, [0] being this era; baseline is the median of the rest.
+  const ANOMALY_THRESHOLD = 0.25; // ±25% from steady-state median
+  function median(nums) {
+    if (nums.length === 0) return 0;
+    const s = [...nums].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+  function flagInflation(inflation, recent, sym) {
+    const flag = els.pInflationFlag;
+    const others = (recent || []).slice(1).map(Number).filter((n) => n > 0);
+    const baseline = median(others);
+    const cur = Number(inflation);
+    const anomalous = baseline > 0 && Math.abs(cur - baseline) / baseline > ANOMALY_THRESHOLD;
+    flag.hidden = !anomalous;
+    if (anomalous) {
+      const dir = cur > baseline ? "higher" : "lower";
+      flag.dataset.tip =
+        `This era's issuance is ${dir} than usual ` +
+        `(recent median ~${fmtTok(BigInt(Math.round(baseline)))} ${sym}).`;
+    }
   }
 
   // Slider zones: <min (warn) · min→optimum · optimum→cap · >cap (capped).
