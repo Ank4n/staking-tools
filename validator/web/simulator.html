@@ -149,6 +149,7 @@
   details.exp > summary { font-family: var(--mono); font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 17px 22px; cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
   details.exp > summary::-webkit-details-marker { display: none; }
   details.exp > summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
+  details.exp > summary .sum-title { display: inline-flex; align-items: center; }
   details.exp > summary .chev { transition: transform 0.18s; color: var(--faint); font-size: 15px; }
   details.exp[open] > summary .chev { transform: rotate(90deg); }
   details.exp > summary:hover { color: var(--text); }
@@ -160,10 +161,9 @@
   .row-stat .k { color: var(--muted); }
   .row-stat .v { color: var(--text); }
   .row-stat .v.teal { color: var(--accent-2); }
-  /* Source tag: where a parameter comes from — Ref-1909 proposal vs. live snapshot. */
+  /* Source tag: which era's snapshot a parameter was read from. */
   .src { font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 6px;
     border-radius: 5px; border: 1px solid var(--line); margin-left: 7px; vertical-align: middle; white-space: nowrap; }
-  .src.ref { color: var(--accent);   border-color: rgba(230,0,122,0.35); }
   .src.era { color: var(--accent-2); border-color: rgba(45,212,191,0.30); }
 
   /* --- Run-N-validators block, inside the hero card --- */
@@ -323,20 +323,20 @@
   </details>
 
   <details class="exp" id="paramsExp">
-    <summary>Chain parameters <span class="chev">›</span></summary>
+    <summary><span class="sum-title">Chain parameters <span class="src era" id="pEra">—</span></span> <span class="chev">›</span></summary>
     <div class="exp-body">
-      <div class="row-stat"><span class="k">Staker rewards budget <span class="src ref">Ref 1909</span></span><span class="v" id="pStaker">—</span></div>
-      <div class="row-stat"><span class="k">Validator incentive budget <span class="src ref">Ref 1909</span></span><span class="v teal" id="pIncentive">—</span></div>
-      <div class="row-stat"><span class="k">Buffer <span class="src ref">Ref 1909</span></span><span class="v" id="pBuffer">—</span></div>
-      <div class="row-stat"><span class="k">Target self-stake <span class="src ref">Ref 1909</span></span><span class="v" id="pOptimum">—</span></div>
-      <div class="row-stat"><span class="k">Hard cap self-stake <span class="src ref">Ref 1909</span></span><span class="v" id="pCap">—</span></div>
-      <div class="row-stat"><span class="k">Slope factor (k) <span class="src ref">Ref 1909</span></span><span class="v" id="pSlope">—</span></div>
-      <div class="row-stat"><span class="k">Validators in era <span class="src era">—</span></span><span class="v" id="pValidators">—</span></div>
-      <div class="row-stat"><span class="k">Total self-stake (era) <span class="src era">—</span></span><span class="v" id="pTotalSelf">—</span></div>
-      <div class="row-stat"><span class="k">Total stake (era) <span class="src era">—</span></span><span class="v" id="pTotalStake">—</span></div>
-      <div class="row-stat"><span class="k">Inflation / era <span class="src era">—</span></span><span class="v" id="pInflation">—</span></div>
-      <div class="row-stat"><span class="k">Staker pool / era <span class="src ref">Ref 1909</span></span><span class="v" id="pStakerPot">—</span></div>
-      <div class="row-stat"><span class="k">Incentive pot / era <span class="src ref">Ref 1909</span></span><span class="v teal" id="pIncentivePot">—</span></div>
+      <div class="row-stat"><span class="k">Staker rewards budget</span><span class="v" id="pStaker">—</span></div>
+      <div class="row-stat"><span class="k">Validator incentive budget</span><span class="v teal" id="pIncentive">—</span></div>
+      <div class="row-stat"><span class="k">Buffer</span><span class="v" id="pBuffer">—</span></div>
+      <div class="row-stat"><span class="k">Target self-stake</span><span class="v" id="pOptimum">—</span></div>
+      <div class="row-stat"><span class="k">Hard cap self-stake</span><span class="v" id="pCap">—</span></div>
+      <div class="row-stat"><span class="k">Slope factor (k)</span><span class="v" id="pSlope">—</span></div>
+      <div class="row-stat"><span class="k">Validators</span><span class="v" id="pValidators">—</span></div>
+      <div class="row-stat"><span class="k">Total self-stake</span><span class="v" id="pTotalSelf">—</span></div>
+      <div class="row-stat"><span class="k">Total stake</span><span class="v" id="pTotalStake">—</span></div>
+      <div class="row-stat"><span class="k">Inflation / era</span><span class="v" id="pInflation">—</span></div>
+      <div class="row-stat"><span class="k">Staker pool / era</span><span class="v" id="pStakerPot">—</span></div>
+      <div class="row-stat"><span class="k">Incentive pot / era</span><span class="v teal" id="pIncentivePot">—</span></div>
     </div>
   </details>
 
@@ -353,12 +353,28 @@
   const PERBILL = 1_000_000_000n;
   const ONE_YEAR_MS = 365n * 24n * 60n * 60n * 1000n;
 
-  // Referendum 1909 parameters (governance-set; same as Westend's live curve).
-  // Token counts; scaled to each chain's decimals at use.
-  const REF = {
-    stakerPct: 45.2, incentivePct: 22.6, bufferPct: 32.2,
-    minTok: 10000, optimumTok: 30000, capTok: 100000, slopeK: 0.5,
-  };
+  // Curve floor for the chart / slider (presentational only; no on-chain source).
+  const MIN_TOK = 10000;
+
+  // Governance-set curve + budget parameters, read live from the embedded
+  // snapshot (was hardcoded from Ref 1909; now sourced from chain per era so it
+  // follows any later governance change). Returns both planck and token forms.
+  function params(c) {
+    const alloc = c.budgetAllocation;
+    const toPct = (raw) => (raw || 0) / 1e9 * 100;
+    const optimum = BigInt(c.optimumSelfStake);
+    const cap = BigInt(c.hardCapSelfStake);
+    return {
+      stakerPct: toPct(alloc.staker_rewards),
+      incentivePct: toPct(alloc.validator_incentive),
+      bufferPct: toPct(alloc.buffer),
+      optimum, cap,
+      slopeRaw: BigInt(c.selfStakeSlopeFactorRaw),
+      optimumTok: toTokens(optimum),
+      capTok: toTokens(cap),
+      slopeK: c.selfStakeSlopeFactorRaw / 1e9,
+    };
+  }
 
   // ---- math (ported from src/apy/calculator.ts; BigInt-exact) ----
   function isqrt(n) {
@@ -400,29 +416,26 @@
   const els = {};
   ["valApy","apyBasis","ownStatus","ownTicks","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange",
    "segStaker","segIncentive","bStaker","bIncentive","bTotal","bAnnual",
-   "pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pValidators","pTotalSelf","pTotalStake","pInflation","pStakerPot","pIncentivePot",
+   "pEra","pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pValidators","pTotalSelf","pTotalStake","pInflation","pStakerPot","pIncentivePot",
    "splitMinus","splitPlus","splitN","totalStake","bAnnualCalc",
    "curve"]
     .forEach(id => els[id] = document.getElementById(id));
 
-  // ---- Ref-1909 scenario for a chain ----
-  // Total DAP reward issuance is fixed; the split only redistributes it. Recover
-  // "issuance per 1%" from the snapshot's staker pot + its current staker %, then
-  // resize both pots under the Ref-1909 split. The incentive denominator is the
-  // EXACT sum of w(ownStake) over every validator in the era under the Ref curve
-  // — computed here even though the chain may not store weights yet.
+  // ---- reward scenario for a chain ----
+  // Total DAP reward issuance is fixed; the budget split only redistributes it.
+  // Recover "issuance per 1%" from the snapshot's staker pot + its staker %, then
+  // resize both pots under the snapshot's budget split. The incentive denominator
+  // is the EXACT sum of w(ownStake) over every validator in the era under the
+  // snapshot's curve — computed here even though the chain may not store weights yet.
   function buildScenario(c) {
-    const stakerPctRaw = c.budgetAllocation.staker_rewards || 0;
-    const incPctRaw = c.budgetAllocation.validator_incentive || 0;
+    const p = params(c);
     let per1 = 0;
-    if (stakerPctRaw > 0) per1 = Number(c.totalStakerReward) / (stakerPctRaw / 1e9 * 100);
-    else if (incPctRaw > 0) per1 = Number(c.validatorIncentiveBudget) / (incPctRaw / 1e9 * 100);
+    if (p.stakerPct > 0) per1 = Number(c.totalStakerReward) / p.stakerPct;
+    else if (p.incentivePct > 0) per1 = Number(c.validatorIncentiveBudget) / p.incentivePct;
 
-    const optimum = toPlanck(REF.optimumTok);
-    const cap = toPlanck(REF.capTok);
-    const slopeRaw = BigInt(Math.round(REF.slopeK * 1e9));
+    const { optimum, cap, slopeRaw } = p;
 
-    // Exact denominator: apply the Ref curve to every real validator's own-stake.
+    // Exact denominator: apply the curve to every real validator's own-stake.
     let sumAll = 0n;
     for (const own of c.ownStakes) {
       sumAll += incentiveWeight(BigInt(own), optimum, cap, slopeRaw);
@@ -430,8 +443,8 @@
 
     return {
       per1,
-      stakerPot: BigInt(Math.max(0, Math.round(per1 * REF.stakerPct))),
-      incentivePot: BigInt(Math.max(0, Math.round(per1 * REF.incentivePct))),
+      stakerPot: BigInt(Math.max(0, Math.round(per1 * p.stakerPct))),
+      incentivePot: BigInt(Math.max(0, Math.round(per1 * p.incentivePct))),
       optimum, cap, slopeRaw,
       sumAll, // sum over the existing set
     };
@@ -485,6 +498,7 @@
   function render() {
     const c = byKey[chainKey];
     const sym = c.tokenSymbol;
+    const p = params(c);
     const sc = buildScenario(c);
     const own = toPlanck(els.own.value || "0");
     const nom = toPlanck(els.nom.value || "0");
@@ -502,18 +516,19 @@
     els.totalStake.textContent = fmtTok(own * BigInt(splitN)) + " " + sym;
 
     // Self-stake slider status — terse, zone-driven.
-    updateOwnStatus(toTokens(own), sym);
+    updateOwnStatus(toTokens(own), sym, p);
 
-    // Chain parameters panel (read-only).
-    els.pStaker.textContent = REF.stakerPct + "%";
-    els.pIncentive.textContent = REF.incentivePct + "%";
-    els.pBuffer.textContent = REF.bufferPct + "%";
-    els.pOptimum.textContent = REF.optimumTok.toLocaleString() + " " + sym;
-    els.pCap.textContent = REF.capTok.toLocaleString() + " " + sym;
-    els.pSlope.textContent = REF.slopeK;
+    // Chain parameters panel (read-only). All values sourced from this era's snapshot.
+    const fmtPct = (n) => (Math.round(n * 10) / 10) + "%";
+    els.pStaker.textContent = fmtPct(p.stakerPct);
+    els.pIncentive.textContent = fmtPct(p.incentivePct);
+    els.pBuffer.textContent = fmtPct(p.bufferPct);
+    els.pOptimum.textContent = fmtTok(p.optimum) + " " + sym;
+    els.pCap.textContent = fmtTok(p.cap) + " " + sym;
+    els.pSlope.textContent = p.slopeK;
     // Era denominators behind the APY: how many validators, and the stake they're divided over.
     const totalSelfStake = c.ownStakes.reduce((acc, s) => acc + BigInt(s), 0n);
-    document.querySelectorAll(".src.era").forEach(el => el.textContent = "Era " + c.era);
+    els.pEra.textContent = "Era " + c.era;
     els.pValidators.textContent = c.validatorCount.toLocaleString();
     els.pTotalSelf.textContent = fmtTok(totalSelfStake) + " " + sym;
     els.pTotalStake.textContent = fmtTok(BigInt(c.totalStake)) + " " + sym;
@@ -540,8 +555,8 @@
   }
 
   // Slider zones: <min (warn) · min→optimum · optimum→cap · >cap (capped).
-  function updateOwnStatus(ownTok, sym) {
-    const { minTok, optimumTok, capTok } = REF;
+  function updateOwnStatus(ownTok, sym, p) {
+    const minTok = MIN_TOK, optimumTok = p.optimumTok, capTok = p.capTok;
     const k = (n) => Math.round(n / 1000) + "k";
     let zone = "", msg = "";
     if (ownTok < minTok)        { zone = "below";   msg = "below min " + k(minTok); }
@@ -641,12 +656,12 @@
     }
   }
 
-  function buildTicks(max) {
+  function buildTicks(max, p) {
     const k = (n) => Math.round(n / 1000) + "k";
     const marks = [
-      [REF.minTok, "min"],
-      [REF.optimumTok, "opt"],
-      [REF.capTok, "cap"],
+      [MIN_TOK, "min"],
+      [p.optimumTok, "opt"],
+      [p.capTok, "cap"],
     ];
     els.ownTicks.innerHTML = marks.map(([v, name]) =>
       `<span class="tick" style="left:${(v / max * 100).toFixed(2)}%"><b>${k(v)}</b>${name}</span>`
@@ -665,10 +680,11 @@
     decimals = c.tokenDecimals;
     const sym = c.tokenSymbol;
     els.unit1.textContent = sym; els.unit2.textContent = sym;
+    const p = params(c);
 
-    const ownMax = Math.round(REF.capTok * 1.5);
+    const ownMax = Math.round(p.capTok * 1.5);
     bindPair("own", "ownRange", ownMax);
-    buildTicks(ownMax);
+    buildTicks(ownMax, p);
     const nomMax = Math.round(toTokens(BigInt(c.totalStake)) / c.validatorCount * 2);
     bindPair("nom", "nomRange", nomMax);
 
@@ -680,7 +696,7 @@
       if (splitN < SPLIT_MAX) { splitN++; render(); }
     });
 
-    setInputs(REF.optimumTok, Math.round(nomMax / 2), 100);
+    setInputs(p.optimumTok, Math.round(nomMax / 2), 100);
   }
 
   function setInputs(ownTok, nomTok, ptsPct) {
