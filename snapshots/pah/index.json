@@ -8,8 +8,8 @@
     "tokenDecimals": 10,
     "ss58Prefix": 0
   },
-  "currentEra": 2223,
-  "activeEra": 2222,
+  "currentEra": 2224,
+  "activeEra": 2223,
   "historyDepth": 84,
   "eras": [
     2185,
@@ -48,7 +48,8 @@
     2218,
     2219,
     2220,
-    2221
+    2221,
+    2222
   ],
-  "updatedAtMs": "1783315728000"
+  "updatedAtMs": "1783409472000"
 }
