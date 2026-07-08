@@ -159,13 +159,12 @@
     <section class="card" data-card="buffer">
       <div class="card-head">Buffer
         <span class="info" tabindex="0" role="button" aria-label="about this metric"
-          data-tip="DAP buffer account balance — accumulates slashes, fees & dust. Grows each era.">i</span>
+          data-tip="DAP buffer account — accumulates slashes, fees & dust. Bars show each era's growth (Δ); the current balance is the KPI above.">i</span>
       </div>
       <div class="kpis spread" id="bufferKpis"></div>
       <canvas id="bufferChart"></canvas>
       <div class="legend">
-        <span><i style="background:var(--accent)"></i>prior balance</span>
-        <span><i style="background:var(--accent-2)"></i>this era's growth (Δ)</span>
+        <span><i style="background:var(--accent)"></i>growth per era (Δ)</span>
       </div>
     </section>
 

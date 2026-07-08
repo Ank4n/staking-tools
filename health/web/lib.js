@@ -70,13 +70,16 @@
     return { x0: x0, x1: x1, y0: y0, y1: y1 };
   }
 
-  function xLabels(ctx, fr, labels) {
+  // `centered` puts each label under its bar slot's center ((i+0.5)/n) instead
+  // of spreading them edge-to-edge like line-chart points.
+  function xLabels(ctx, fr, labels, centered) {
     ctx.fillStyle = cssVar("--faint");
     ctx.font = '10px ' + cssVar("--mono");
     ctx.textAlign = "center"; ctx.textBaseline = "top";
     var n = labels.length;
     for (var i = 0; i < n; i++) {
-      var x = fr.x0 + (fr.x1 - fr.x0) * (n === 1 ? 0.5 : i / (n - 1));
+      var f = centered ? (i + 0.5) / n : (n === 1 ? 0.5 : i / (n - 1));
+      var x = fr.x0 + (fr.x1 - fr.x0) * f;
       ctx.fillText(labels[i], x, fr.y0 + 6);
     }
   }
@@ -134,7 +137,7 @@
     p.ctx.setLineDash([5, 4]);
     p.ctx.beginPath(); p.ctx.moveTo(fr.x0, yt); p.ctx.lineTo(fr.x1, yt); p.ctx.stroke();
     p.ctx.setLineDash([]);
-    xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }));
+    xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }), true);
     canvas._hits = hits; canvas._cssW = p.w; attachHover(canvas);
   }
 
@@ -278,39 +281,52 @@
         acc += hs;
       }
     }
-    xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }));
+    xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }), true);
     canvas._hits = hits; canvas._cssW = p.w; attachHover(canvas);
   }
 
   function drawBuffer(canvas, cssH) {
     var c = chain(), eras = c.eras;
     var p = prep(canvas, cssH || 150);
-    // Cumulative DAP buffer balance per era (a stock that keeps growing). Each
-    // bar's bright TOP segment is that era's growth (Δ = balance - prevBalance);
-    // the darker base is the prior balance. Hover shows exact balance + Δ.
+    // Per-era buffer GROWTH (Δ = balance − previous era's balance), zero-based
+    // so the deltas are directly comparable. The balance itself is a smooth
+    // ever-growing stock — its current value lives in the KPI above; plotting
+    // it here squashed the per-era movement into slivers. The oldest era's Δ
+    // is seeded by `prevBufferBalance` (the balance just before the window) so
+    // this chart spans the same eras as the others; if that seed is missing,
+    // only the oldest era goes barless. Hover shows Δ + end-of-era balance.
     var bal = eras.map(function (e) { return tok(e.pots.buffer, c); });
-    var delta = eras.map(function (e, i) { return i === 0 ? 0 : Math.max(0, bal[i] - bal[i - 1]); });
-    var max = Math.max.apply(null, bal) * 1.1 || 1;
-    var fr = axes(p.ctx, p.w, p.h, { max: max });
-    var n = eras.length, bw = (fr.x1 - fr.x0) / n;
-    var base = cssVar("--accent"), top = cssVar("--accent-2");
+    var pts = [];
+    for (var i = 0; i < eras.length; i++) {
+      var prior = i > 0 ? bal[i - 1]
+        : (c.prevBufferBalance != null ? tok(c.prevBufferBalance, c) : null);
+      if (prior == null) continue;
+      pts.push({ era: eras[i].era, delta: bal[i] - prior, bal: bal[i] });
+    }
+    if (!pts.length) return;
+    var deltas = pts.map(function (d) { return d.delta; });
+    // keep a zero baseline; extend below only if some era actually shrank
+    var hi = Math.max(Math.max.apply(null, deltas), 0) * 1.12 || 1;
+    var lo = Math.min(Math.min.apply(null, deltas), 0) * 1.12;
+    var fr = axesRange(p.ctx, p.w, p.h, lo, hi);
+    function yOf(v) { return fr.y0 - (fr.y0 - fr.y1) * ((v - lo) / (hi - lo)); }
+    var yZero = yOf(0);
+    var n = pts.length, bw = (fr.x1 - fr.x0) / n;
     var hits = [];
     for (var i = 0; i < n; i++) {
+      var d = pts[i];
       var cx = fr.x0 + bw * (i + 0.5);
-      var yTotal = fr.y0 - (fr.y0 - fr.y1) * (bal[i] / max);
-      var yBase = fr.y0 - (fr.y0 - fr.y1) * ((bal[i] - delta[i]) / max);
-      // base segment (prior balance)
-      p.ctx.fillStyle = base;
-      p.ctx.fillRect(cx - bw * 0.3, yBase, bw * 0.6, fr.y0 - yBase);
-      // delta segment (this era's growth) on top, brighter
-      p.ctx.fillStyle = top;
-      p.ctx.fillRect(cx - bw * 0.3, yTotal, bw * 0.6, yBase - yTotal);
-      // whole bar is one hit target -> shows balance + Δ anywhere on it
-      hits.push({ rect: { x: cx - bw * 0.3, y: yTotal, w: bw * 0.6, h: fr.y0 - yTotal },
-        color: top, label: "buffer", era: eras[i].era,
-        text: fmtToken(bal[i]) + " " + c.tokenSymbol + "  (Δ " + (delta[i] > 0 ? "+" : "") + fmtToken(delta[i]) + ")" });
+      var yv = yOf(d.delta);
+      var ry = Math.min(yv, yZero), rh = Math.abs(yZero - yv);
+      var color = d.delta < 0 ? cssVar("--warn") : cssVar("--accent");
+      p.ctx.fillStyle = color;
+      p.ctx.fillRect(cx - bw * 0.3, ry, bw * 0.6, rh);
+      hits.push({ rect: { x: cx - bw * 0.3, y: ry, w: bw * 0.6, h: Math.max(rh, 6) },
+        color: color, label: "buffer Δ", era: d.era,
+        text: (d.delta >= 0 ? "+" : "") + fmtToken(d.delta) + " " + c.tokenSymbol +
+          "  (balance " + fmtToken(d.bal) + ")" });
     }
-    xLabels(p.ctx, fr, eras.map(function (e) { return e.era; }));
+    xLabels(p.ctx, fr, pts.map(function (d) { return d.era; }), true);
     canvas._hits = hits; canvas._cssW = p.w; attachHover(canvas);
   }
 
@@ -441,8 +457,8 @@
       legend: '<span><i style="background:var(--accent)"></i>nominators</span><span><i style="background:var(--accent-2)"></i>registered validators</span><span><i style="background:var(--warn)"></i>unbonding (own scale)</span>' },
     inflation: { fn: drawInflation, title: "Per-era reward pots — staker rewards / validator incentive",
       legend: '<span><i style="background:var(--accent)"></i>staker rewards</span><span><i style="background:var(--accent-2)"></i>validator incentive</span>' },
-    buffer: { fn: drawBuffer, title: "DAP buffer balance per era (cumulative)",
-      legend: '<span><i style="background:var(--accent)"></i>prior balance</span><span><i style="background:var(--accent-2)"></i>this era\'s growth (Δ)</span>' }
+    buffer: { fn: drawBuffer, title: "DAP buffer — growth per era (Δ)",
+      legend: '<span><i style="background:var(--accent)"></i>growth per era (Δ)</span>' }
   };
 
   function openZoom(card) {

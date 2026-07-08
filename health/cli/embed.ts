@@ -66,6 +66,12 @@ interface EmbedChain {
   tokenDecimals: number;
   updatedAtMs: string | null;
   eraDurationMs: string;
+  /**
+   * Buffer balance of the era just BEFORE the embedded window (planck string,
+   * null if none on disk). Seeds the oldest displayed era's Δ in the buffer
+   * chart, so every embedded era gets a bar.
+   */
+  prevBufferBalance: string | null;
   eras: EmbedEra[];
 }
 
@@ -114,13 +120,21 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
   const eras = await listEras(chain);
   if (eras.length === 0) return null;
 
-  // Walk newest→oldest, collecting eras that have health, up to MAX_ERAS.
+  // Walk newest→oldest, collecting eras that have health, up to MAX_ERAS —
+  // then one more, whose buffer balance seeds the oldest displayed era's Δ.
   const collected: EmbedEra[] = [];
-  for (let i = eras.length - 1; i >= 0 && collected.length < MAX_ERAS; i--) {
+  let prevBufferBalance: string | null = null;
+  for (let i = eras.length - 1; i >= 0; i--) {
     const s = await readEra(chain, eras[i]);
     if (!s) continue;
     const e = toEmbedEra(s);
-    if (e) collected.push(e);
+    if (!e) continue;
+    if (collected.length < MAX_ERAS) {
+      collected.push(e);
+    } else {
+      prevBufferBalance = e.pots.buffer;
+      break;
+    }
   }
   if (collected.length === 0) return null;
   collected.reverse(); // oldest → newest
@@ -135,6 +149,7 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
     tokenDecimals: chain.tokenDecimals,
     updatedAtMs: index?.updatedAtMs ?? null,
     eraDurationMs: newest?.eraDurationMs ?? "0",
+    prevBufferBalance,
     eras: collected,
   };
 }
