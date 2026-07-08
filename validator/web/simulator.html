@@ -104,6 +104,12 @@
     background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 9px; }
   .theme-toggle:hover { color: var(--text); border-color: var(--faint); }
   .theme-toggle:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+  /* Era picker: which snapshot era the numbers come from (newest by default). */
+  .mast-controls { display: flex; align-items: center; gap: 10px; }
+  select.era-sel { font-family: var(--mono); font-size: 12.5px; height: 38px; padding: 0 10px;
+    background: var(--panel); color: var(--muted); border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+  select.era-sel:hover { color: var(--text); border-color: var(--faint); }
+  select.era-sel:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
 
   /* --- Curve + APY cards --- */
   .curve-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 6px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
@@ -234,7 +240,10 @@
       <span class="dot" aria-hidden="true"></span>
       <h1>Polkadot validator APY calculator</h1>
     </div>
-    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">☾</button>
+    <div class="mast-controls">
+      <select id="eraSel" class="era-sel" aria-label="Snapshot era"></select>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark theme" title="Toggle theme">☾</button>
+    </div>
   </header>
 
   <div class="dash">
@@ -414,6 +423,12 @@
 
   // ---- state ----
   let chainKey = "pah";
+  // Which embedded era drives the numbers. `eras` is newest-first, so 0 = latest.
+  let eraIdx = 0;
+  const chain = () => byKey[chainKey];
+  // Selected era's data merged over the chain's static metadata; everything
+  // downstream reads era-scoped fields (pots, params, ownStakes) off this.
+  const view = () => ({ ...chain(), ...chain().eras[eraIdx] });
   let decimals = 10;
   // How many identical validators the user runs. APY is per-node (flat); totals ×N.
   const SPLIT_MIN = 1, SPLIT_MAX = 10;
@@ -427,7 +442,7 @@
   const toTokens = (planck) => Number(planck) / Number(unit());
 
   const els = {};
-  ["valApy","apyBasis","ownStatus","ownTicks","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange",
+  ["valApy","apyBasis","ownStatus","ownTicks","unit1","unit2","own","ownRange","nom","nomRange","pts","ptsRange","eraSel",
    "segStaker","segIncentive","bStaker","bIncentive","bTotal","bAnnual",
    "pEra","pStaker","pIncentive","pBuffer","pOptimum","pCap","pSlope","pValidators","pTotalSelf","pTotalStake","pInflation","pInflationFlag","pStakerPot","pIncentivePot",
    "splitMinus","splitPlus","splitN","totalStake","bAnnualCalc",
@@ -496,12 +511,12 @@
 
   const pct = (f) => (f * 100).toFixed(2);
   // " · updated 24 Jun 2026" — empty if no timestamp on this snapshot.
-  function fmtUpdated(ms) {
+  function fmtStamp(label, ms) {
     if (ms == null) return "";
     const d = new Date(Number(ms));
     if (isNaN(d.getTime())) return "";
     const s = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-    return ` · updated ${s}`;
+    return ` · ${label} ${s}`;
   }
   function fmtTok(planck) {
     const t = toTokens(planck);
@@ -509,7 +524,7 @@
   }
 
   function render() {
-    const c = byKey[chainKey];
+    const c = view();
     const sym = c.tokenSymbol;
     const p = params(c);
     const sc = buildScenario(c);
@@ -519,8 +534,11 @@
     const r = compute(c, sc, own, nom, pointsFrac, splitN);
 
     els.valApy.textContent = pct(r.valApy);
-    // Provenance footnote: snapshot era + when it was last refreshed from chain.
-    els.apyBasis.textContent = `Based on Era ${c.era}${fmtUpdated(c.updatedAtMs)}`;
+    // Provenance footnote: snapshot era + a freshness stamp — last chain refresh
+    // for the latest era, the shard's capture time for older ones.
+    els.apyBasis.textContent = `Based on Era ${c.era}${eraIdx === 0
+      ? fmtStamp("updated", c.updatedAtMs)
+      : fmtStamp("captured", c.capturedAtMs)}`;
 
     // Run-N validators: APY is per-node (flat); hero shows total stake only.
     els.splitN.textContent = splitN;
@@ -710,25 +728,44 @@
     ).join("");
   }
 
-  function bindPair(numId, rangeId, max) {
+  function bindPair(numId, rangeId) {
     const num = els[numId], range = els[rangeId];
-    range.max = max;
     range.addEventListener("input", () => { num.value = range.value; render(); });
-    num.addEventListener("input", () => { range.value = Math.min(Number(num.value) || 0, max); render(); });
+    num.addEventListener("input", () => { range.value = Math.min(Number(num.value) || 0, Number(range.max)); render(); });
+  }
+
+  // (Re)derive everything that depends on the selected era — slider ranges and
+  // curve ticks may shift if governance changed the params mid-window. Keeps
+  // the user's typed inputs; only the slider positions clamp to the new maxes.
+  function applyEra() {
+    const c = view();
+    const p = params(c);
+    const ownMax = Math.round(p.capTok * 1.5);
+    els.ownRange.max = ownMax;
+    buildTicks(ownMax, p);
+    const nomMax = Math.round(toTokens(BigInt(c.totalStake)) / c.validatorCount * 2);
+    els.nomRange.max = nomMax;
+    els.ownRange.value = Math.min(Number(els.own.value) || 0, ownMax);
+    els.nomRange.value = Math.min(Number(els.nom.value) || 0, nomMax);
+    render();
   }
 
   function init() {
-    const c = byKey[chainKey];
+    const c = chain();
     decimals = c.tokenDecimals;
     const sym = c.tokenSymbol;
     els.unit1.textContent = sym; els.unit2.textContent = sym;
-    const p = params(c);
 
-    const ownMax = Math.round(p.capTok * 1.5);
-    bindPair("own", "ownRange", ownMax);
-    buildTicks(ownMax, p);
-    const nomMax = Math.round(toTokens(BigInt(c.totalStake)) / c.validatorCount * 2);
-    bindPair("nom", "nomRange", nomMax);
+    // Era picker: embedded eras, newest first; latest is the default.
+    els.eraSel.innerHTML = c.eras.map((e, i) =>
+      `<option value="${i}">Era ${e.era}${i === 0 ? " · latest" : ""}</option>`).join("");
+    els.eraSel.addEventListener("change", () => {
+      eraIdx = Number(els.eraSel.value);
+      applyEra();
+    });
+
+    bindPair("own", "ownRange");
+    bindPair("nom", "nomRange");
 
     // Validator-count stepper in the hero (drives the ×N totals).
     els.splitMinus.addEventListener("click", () => {
@@ -738,7 +775,8 @@
       if (splitN < SPLIT_MAX) { splitN++; render(); }
     });
 
-    setInputs(p.optimumTok, Math.round(nomMax / 2), 100);
+    applyEra();
+    setInputs(params(view()).optimumTok, Math.round(Number(els.nomRange.max) / 2), 100);
   }
 
   function setInputs(ownTok, nomTok, ptsPct) {
@@ -750,7 +788,7 @@
     render();
   }
 
-  bindPair("pts", "ptsRange", 200);
+  bindPair("pts", "ptsRange"); // ptsRange carries max=200 in the markup
   window.addEventListener("resize", render);
 
   // ---- theme toggle (dark default; persisted; falls back to OS) ----

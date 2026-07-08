@@ -1,14 +1,35 @@
 /**
- * Extracts a compact, self-contained data blob from the newest snapshot of each
- * chain, for embedding into the standalone HTML simulator (which can't fetch).
+ * Extracts a compact, self-contained data blob from the newest snapshots of
+ * each chain, for embedding into the standalone HTML simulator (which can't
+ * fetch).
  *
- * Emits JSON to stdout: per chain, the era-level reward params plus a small
- * sample of real validators (for the "load a real validator" presets).
+ * Emits JSON to stdout: per chain, static chain metadata plus the newest
+ * EMBED_ERAS complete eras (newest first), each carrying the era-level reward
+ * params the simulator needs. The app defaults to the newest era and lets the
+ * user pick an older one from a dropdown.
  *
  *   pnpm tsx validator/cli/embed.ts > validator/web/data.json
  */
-import { getChain, CHAINS } from "../../shared/chains/index.js";
+import { getChain } from "../../shared/chains/index.js";
 import { readEra, listEras, readIndex } from "../../shared/snapshot/store.js";
+import type { EraSnapshot } from "../../shared/snapshot/types.js";
+
+/**
+ * Chains baked into the public page. This site is Polkadot-only; `wah` stays
+ * snapshot-able for internal testing but is not embedded.
+ */
+const EMBED_CHAINS = ["pah"];
+/** How many eras (newest first) to embed per chain. */
+const EMBED_ERAS = 28;
+/**
+ * Per-chain data floor: don't embed eras below this. PAH data before era 2220
+ * is not correct (early Ref-1909 rollout; pre-1909 eras also lack the
+ * incentive curve entirely). The window grows daily from the floor until it
+ * fills EMBED_ERAS.
+ */
+const MIN_ERA: Record<string, number> = { pah: 2220 };
+/** Window for the per-era inflation baseline (this era + the previous few). */
+const RECENT = 6;
 
 interface EmbedValidator {
   address: string;
@@ -18,14 +39,10 @@ interface EmbedValidator {
   rewardPoints: number;
 }
 
-interface EmbedChain {
-  chainKey: string;
-  chainName: string;
-  tokenSymbol: string;
-  tokenDecimals: number;
+interface EmbedEra {
   era: number;
-  /** When this snapshot was last refreshed from chain (epoch ms, as string). */
-  updatedAtMs: string | null;
+  /** When this era's shard was captured from chain (epoch ms, as string). */
+  capturedAtMs: string;
   eraDurationMs: string;
   totalStakerReward: string;
   validatorIncentiveBudget: string;
@@ -37,8 +54,6 @@ interface EmbedChain {
   hardCapSelfStake: string;
   selfStakeSlopeFactorRaw: number;
   budgetAllocation: Record<string, number>;
-  /** A handful of real validators spanning the stake range, as presets. */
-  sampleValidators: EmbedValidator[];
   /**
    * Every validator's own self-stake (planck strings) for the era. Used to
    * compute the exact incentive-weight denominator under a chosen curve — even
@@ -47,10 +62,25 @@ interface EmbedChain {
   ownStakes: string[];
   /**
    * Inflation-per-era (planck strings) for the last few eras, newest first,
-   * INCLUDING this era. The UI takes the median of the others as a steady-state
-   * baseline to flag DAP drip catch-up eras (whose reward pot carries backlog).
+   * INCLUDING this era. Computed against the full on-disk history, so eras at
+   * the edge of the embed window still get a proper baseline. The UI takes the
+   * median of the others to flag DAP drip catch-up eras (whose reward pot
+   * carries backlog).
    */
   recentInflation: string[];
+}
+
+interface EmbedChain {
+  chainKey: string;
+  chainName: string;
+  tokenSymbol: string;
+  tokenDecimals: number;
+  /** When the snapshot index was last refreshed from chain (epoch ms, string). */
+  updatedAtMs: string | null;
+  /** A handful of real validators (newest era) spanning the stake range. */
+  sampleValidators: EmbedValidator[];
+  /** Embedded eras, newest first. The app defaults to the first entry. */
+  eras: EmbedEra[];
 }
 
 /** Inflation issued in an era = staker reward pot scaled up by 1/staker-share. */
@@ -69,17 +99,67 @@ function inflationOf(s: {
   return 0n;
 }
 
+function buildEra(
+  s: EraSnapshot,
+  /** All loaded shards, ascending, up to and including `s` (for the baseline). */
+  history: EraSnapshot[],
+): EmbedEra {
+  const budgetAllocation: Record<string, number> = {};
+  for (const [k, p] of Object.entries(s.dapParams.budgetAllocation)) {
+    budgetAllocation[k] = p.raw;
+  }
+  const recentInflation = history
+    .slice(-RECENT)
+    .reverse()
+    .map((es) => inflationOf(es).toString());
+
+  return {
+    era: s.era,
+    capturedAtMs: s.capturedAtMs,
+    eraDurationMs: s.eraDurationMs,
+    totalStakerReward: s.totalStakerReward,
+    validatorIncentiveBudget: s.validatorIncentiveBudget,
+    totalRewardPoints: s.totalRewardPoints,
+    totalStake: s.totalStake,
+    sumIncentiveWeight: s.sumIncentiveWeight,
+    validatorCount: s.validators.length,
+    optimumSelfStake: s.incentiveParams.optimumSelfStake,
+    hardCapSelfStake: s.incentiveParams.hardCapSelfStake,
+    selfStakeSlopeFactorRaw: s.incentiveParams.selfStakeSlopeFactor.raw,
+    budgetAllocation,
+    ownStakes: s.validators.map((v) => v.ownStake),
+    recentInflation,
+  };
+}
+
 async function buildChain(key: string): Promise<EmbedChain | null> {
   const chain = getChain(key);
-  const eras = await listEras(chain);
-  if (eras.length === 0) return null;
-  const era = eras[eras.length - 1];
-  const s = await readEra(chain, era);
-  if (!s) return null;
+  const eraIdxs = await listEras(chain);
+  if (eraIdxs.length === 0) return null;
   const index = await readIndex(chain);
 
-  // Pick samples spanning the own-stake range: min, low-quartile, median, top.
-  const byOwn = [...s.validators].sort(
+  // Load the embed window plus enough older eras to seed inflation baselines.
+  const loaded: EraSnapshot[] = [];
+  for (const e of eraIdxs.slice(-(EMBED_ERAS + RECENT - 1))) {
+    const s = await readEra(chain, e);
+    if (s) loaded.push(s);
+  }
+  if (loaded.length === 0) return null;
+
+  // Drop eras below the chain's data floor (see MIN_ERA). Fall back to
+  // everything if a chain has nothing at/above its floor yet.
+  const usable = loaded.filter((s) => s.era >= (MIN_ERA[key] ?? 0));
+  const pool = usable.length > 0 ? usable : loaded;
+
+  const embedded = pool.slice(-EMBED_ERAS);
+  const eras = embedded
+    .map((s) => buildEra(s, loaded.slice(0, loaded.indexOf(s) + 1)))
+    .reverse(); // newest first
+
+  // Pick samples spanning the newest era's own-stake range:
+  // min, low-quartile, median, top.
+  const newest = pool[pool.length - 1];
+  const byOwn = [...newest.validators].sort(
     (a, b) => (BigInt(a.ownStake) < BigInt(b.ownStake) ? -1 : 1),
   );
   const pick = (frac: number) =>
@@ -99,47 +179,20 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
     });
   }
 
-  const budgetAllocation: Record<string, number> = {};
-  for (const [k, p] of Object.entries(s.dapParams.budgetAllocation)) {
-    budgetAllocation[k] = p.raw;
-  }
-
-  // Last few eras' inflation, newest first, as a steady-state baseline for the UI.
-  const RECENT = 6;
-  const recentEras = eras.slice(-RECENT).reverse();
-  const recentInflation: string[] = [];
-  for (const e of recentEras) {
-    const es = e === era ? s : await readEra(chain, e);
-    if (es) recentInflation.push(inflationOf(es).toString());
-  }
-
   return {
-    chainKey: s.chain.chainKey,
-    chainName: s.chain.chainName,
-    tokenSymbol: s.chain.tokenSymbol,
-    tokenDecimals: s.chain.tokenDecimals,
-    era: s.era,
+    chainKey: newest.chain.chainKey,
+    chainName: newest.chain.chainName,
+    tokenSymbol: newest.chain.tokenSymbol,
+    tokenDecimals: newest.chain.tokenDecimals,
     updatedAtMs: index?.updatedAtMs ?? null,
-    eraDurationMs: s.eraDurationMs,
-    totalStakerReward: s.totalStakerReward,
-    validatorIncentiveBudget: s.validatorIncentiveBudget,
-    totalRewardPoints: s.totalRewardPoints,
-    totalStake: s.totalStake,
-    sumIncentiveWeight: s.sumIncentiveWeight,
-    validatorCount: s.validators.length,
-    optimumSelfStake: s.incentiveParams.optimumSelfStake,
-    hardCapSelfStake: s.incentiveParams.hardCapSelfStake,
-    selfStakeSlopeFactorRaw: s.incentiveParams.selfStakeSlopeFactor.raw,
-    budgetAllocation,
     sampleValidators,
-    ownStakes: s.validators.map((v) => v.ownStake),
-    recentInflation,
+    eras,
   };
 }
 
 async function main() {
   const out: EmbedChain[] = [];
-  for (const key of Object.keys(CHAINS)) {
+  for (const key of EMBED_CHAINS) {
     const c = await buildChain(key);
     if (c) out.push(c);
   }

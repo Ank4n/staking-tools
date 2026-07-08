@@ -8,10 +8,15 @@
  *
  *   pnpm tsx health/cli/embed.ts > health/web/data.json
  */
-import { getChain, CHAINS } from "../../shared/chains/index.js";
+import { getChain } from "../../shared/chains/index.js";
 import { readEra, listEras, readIndex } from "../../shared/snapshot/store.js";
 import type { EraSnapshot } from "../../shared/snapshot/types.js";
 
+/**
+ * Chains baked into the public page. This site is Polkadot-only; `wah` stays
+ * snapshot-able for internal testing but is not embedded.
+ */
+const EMBED_CHAINS = ["pah"];
 /** How many recent eras to embed. */
 const MAX_ERAS = 7;
 
@@ -136,7 +141,7 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
 
 async function main() {
   const out: EmbedChain[] = [];
-  for (const key of Object.keys(CHAINS)) {
+  for (const key of EMBED_CHAINS) {
     const c = await buildChain(key);
     if (c) out.push(c);
   }
