@@ -24,7 +24,10 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 11
+          # Exact pin: pnpm 11.12.0's self-installer is broken ("Cannot use 'in'
+          # operator to search for 'integrity' in undefined"); a floating "11"
+          # resolves to it and kills the job before any project step runs.
+          version: 11.11.0
 
       - uses: actions/setup-node@v6
         with:
@@ -51,7 +54,10 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 11
+          # Exact pin: pnpm 11.12.0's self-installer is broken ("Cannot use 'in'
+          # operator to search for 'integrity' in undefined"); a floating "11"
+          # resolves to it and kills the job before any project step runs.
+          version: 11.11.0
 
       - uses: actions/setup-node@v6
         with:
