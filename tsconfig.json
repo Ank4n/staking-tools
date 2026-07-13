@@ -12,5 +12,12 @@
     "types": ["node"],
     "verbatimModuleSyntax": false
   },
-  "include": ["shared/**/*.ts", "validator/**/*.ts"]
+  "include": [
+    "shared/**/*.ts",
+    "validator/**/*.ts",
+    "balances/**/*.ts",
+    "health/**/*.ts",
+    "expenses/**/*.ts",
+    "tools/**/*.ts"
+  ]
 }

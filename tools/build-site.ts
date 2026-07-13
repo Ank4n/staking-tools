@@ -87,6 +87,19 @@ const APPS: App[] = [
       return readFileSync(join(ROOT, "health", "web", "health.built.html"), "utf8");
     },
   },
+  {
+    slug: "balances",
+    title: "Balances",
+    blurb: "DAP pots, era reward pots & treasury — snapshot history + live chain reads.",
+    icon: "🏦",
+    build: () => {
+      // Refresh embedded data + inline data/papi-bundle/lib, reusing the
+      // app's build script. The page ALSO reads live chain state after
+      // load — the one deliberate runtime-fetch exception on this site.
+      execFileSync("pnpm", ["build-balances"], { cwd: ROOT, stdio: "inherit" });
+      return readFileSync(join(ROOT, "balances", "web", "balances.built.html"), "utf8");
+    },
+  },
 ];
 
 function landingPage(apps: App[]): string {

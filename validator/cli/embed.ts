@@ -21,13 +21,8 @@ import type { EraSnapshot } from "../../shared/snapshot/types.js";
 const EMBED_CHAINS = ["pah"];
 /** How many eras (newest first) to embed per chain. */
 const EMBED_ERAS = 28;
-/**
- * Per-chain data floor: don't embed eras below this. PAH data before era 2220
- * is not correct (early Ref-1909 rollout; pre-1909 eras also lack the
- * incentive curve entirely). The window grows daily from the floor until it
- * fills EMBED_ERAS.
- */
-const MIN_ERA: Record<string, number> = { pah: 2220 };
+// Eras below the chain's data floor (`ChainConfig.dataFloorEra`) are not
+// embedded; the window grows daily from the floor until it fills EMBED_ERAS.
 /** Window for the per-era inflation baseline (this era + the previous few). */
 const RECENT = 6;
 
@@ -146,9 +141,9 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
   }
   if (loaded.length === 0) return null;
 
-  // Drop eras below the chain's data floor (see MIN_ERA). Fall back to
-  // everything if a chain has nothing at/above its floor yet.
-  const usable = loaded.filter((s) => s.era >= (MIN_ERA[key] ?? 0));
+  // Drop eras below the chain's data floor. Fall back to everything if a
+  // chain has nothing at/above its floor yet.
+  const usable = loaded.filter((s) => s.era >= chain.dataFloorEra);
   const pool = usable.length > 0 ? usable : loaded;
 
   const embedded = pool.slice(-EMBED_ERAS);

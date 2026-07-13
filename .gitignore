@@ -10,6 +10,8 @@ validator/web/data.json
 expenses/web/expenses.built.html
 health/web/health.built.html
 health/web/data.json
+balances/web/balances.built.html
+balances/web/data.json
 site
 .DS_Store
 .env

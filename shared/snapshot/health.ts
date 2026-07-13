@@ -24,6 +24,7 @@ import type {
   EraBoundary,
   ElectionScore,
   PotBalances,
+  TreasuryBalances,
   UnbondingSummary,
 } from "./types.js";
 
@@ -76,6 +77,18 @@ export function potAccounts(ss58Prefix: number): {
     buffer: codec.dec(palletSubAccount("dap/buff", [])),
   };
 }
+
+/**
+ * The treasury: the `py/trsry` PalletId account (`into_account_truncating`,
+ * empty arg). On PAH this is 13UVJyLnbVp9RBZYFwFGyDvVd1y27Tt8tkntv6Q7JVPhFsTB
+ * (verified against live balances: ~24M DOT + USDT/USDC holdings).
+ */
+export function treasuryAccount(ss58Prefix: number): string {
+  return AccountId(ss58Prefix).dec(palletSubAccount("py/trsry", []));
+}
+
+/** Asset Hub asset IDs for the stablecoins the treasury holds. */
+export const ASSET_IDS = { usdt: 1984, usdc: 1337 } as const;
 
 /** Subscan endpoint host per chain key. */
 function subscanBase(chainKey: string): string {
@@ -198,8 +211,11 @@ export async function reconstructEraHealth(
   // Unbonding across all ledgers.
   const unbonding = await readUnbonding(api, balanceHash);
 
-  // DAP pot balances.
-  const pots = await readPotBalances(api, ss58Prefix, balanceHash);
+  // DAP pot + treasury balances (independent reads at the same block).
+  const [pots, treasury] = await Promise.all([
+    readPotBalances(api, ss58Prefix, balanceHash),
+    readTreasuryBalances(api, ss58Prefix, balanceHash),
+  ]);
 
   const boundary: EraBoundary = {
     block: boundaryBlock,
@@ -223,6 +239,7 @@ export async function reconstructEraHealth(
     unbonding,
     allValidatorOwnStakes,
     pots,
+    treasury,
   };
 }
 
@@ -273,5 +290,24 @@ async function readPotBalances(
     buffer: buffer.data.free.toString(),
     stakerReward: stakerReward.data.free.toString(),
     validatorIncentive: validatorIncentive.data.free.toString(),
+  };
+}
+
+async function readTreasuryBalances(
+  api: Api,
+  ss58Prefix: number,
+  hash: string,
+): Promise<TreasuryBalances> {
+  const at = { at: hash } as const;
+  const treasury = treasuryAccount(ss58Prefix);
+  const [acct, usdt, usdc] = await Promise.all([
+    api.query.System.Account.getValue(treasury, at),
+    api.query.Assets.Account.getValue(ASSET_IDS.usdt, treasury, at),
+    api.query.Assets.Account.getValue(ASSET_IDS.usdc, treasury, at),
+  ]);
+  return {
+    dot: acct.data.free.toString(),
+    usdt: (usdt?.balance ?? 0n).toString(),
+    usdc: (usdc?.balance ?? 0n).toString(),
   };
 }

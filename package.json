@@ -12,6 +12,7 @@
     "build-expenses": "tsx expenses/cli/build-web.ts",
     "health-reconstruct": "tsx health/cli/reconstruct.ts",
     "build-health": "tsx health/cli/embed.ts > health/web/data.json && tsx health/cli/build-web.ts",
+    "build-balances": "tsx balances/cli/embed.ts > balances/web/data.json && tsx balances/cli/build-web.ts",
     "build-site": "tsx tools/build-site.ts",
     "test": "tsx --test validator/test/*.test.ts",
     "papi": "papi",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "^0.25.12",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

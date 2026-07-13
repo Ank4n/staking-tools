@@ -101,6 +101,16 @@ export interface UnbondingSummary {
   totalValue: string;
 }
 
+/** Treasury account balances at `balanceBlock`. */
+export interface TreasuryBalances {
+  /** Treasury free DOT (planck string). */
+  dot: string;
+  /** Treasury USDT balance (asset 1984, 6-decimal units, string). */
+  usdt: string;
+  /** Treasury USDC balance (asset 1337, 6-decimal units, string). */
+  usdc: string;
+}
+
 /** Native balances of the three DAP issuance pots, at `balanceBlock`. */
 export interface PotBalances {
   /** DAP buffer account free balance (planck string). */
@@ -172,6 +182,12 @@ export interface EraHealth {
 
   /** DAP pot balances at `boundary.balanceBlock`. */
   pots: PotBalances;
+
+  /**
+   * Treasury balances at `boundary.balanceBlock`. Optional: absent on eras
+   * reconstructed before this field existed.
+   */
+  treasury?: TreasuryBalances;
 }
 
 /** Per-validator data for an era. */

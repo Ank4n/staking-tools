@@ -22,6 +22,20 @@ export interface ChainConfig {
   readonly tokenDecimals: number;
   /** SS58 prefix, recorded in snapshots for address interpretation. */
   readonly ss58Prefix: number;
+  /**
+   * Per-chain data floor: embeds must not include eras below this. PAH data
+   * before era 2220 is not correct (early Ref-1909 rollout; pre-1909 eras
+   * also lack the incentive curve entirely). 0 = no floor.
+   */
+  readonly dataFloorEra: number;
+  /**
+   * WSS endpoint baked into pages that connect from the visitor's browser
+   * (the Balances app). May differ from `endpoint` (used by the snapshot
+   * CLIs): Dwellir is preferred for browser traffic.
+   */
+  readonly browserEndpoint: string;
+  /** Subscan web UI base (NOT the API host — see `subscanBase` in health.ts). */
+  readonly subscanWeb: string;
 }
 
 export const CHAINS = {
@@ -32,6 +46,9 @@ export const CHAINS = {
     tokenSymbol: "WND",
     tokenDecimals: 12,
     ss58Prefix: 42,
+    dataFloorEra: 0,
+    browserEndpoint: "wss://asset-hub-westend-rpc.n.dwellir.com",
+    subscanWeb: "https://assethub-westend.subscan.io",
   },
   pah: {
     key: "pah",
@@ -40,6 +57,9 @@ export const CHAINS = {
     tokenSymbol: "DOT",
     tokenDecimals: 10,
     ss58Prefix: 0,
+    dataFloorEra: 2220,
+    browserEndpoint: "wss://asset-hub-polkadot-rpc.n.dwellir.com",
+    subscanWeb: "https://assethub-polkadot.subscan.io",
   },
 } as const satisfies Record<string, ChainConfig>;
 
