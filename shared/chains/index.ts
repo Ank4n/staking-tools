@@ -53,7 +53,7 @@ export const CHAINS = {
   pah: {
     key: "pah",
     name: "Polkadot Asset Hub",
-    endpoint: "wss://polkadot-asset-hub-rpc.polkadot.io",
+    endpoint: "wss://asset-hub-polkadot-rpc.n.dwellir.com",
     tokenSymbol: "DOT",
     tokenDecimals: 10,
     ss58Prefix: 0,
