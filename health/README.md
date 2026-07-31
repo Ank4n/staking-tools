@@ -43,7 +43,7 @@ sparingly: one Subscan call per era. Point `RPC_PAH` at an archive node (e.g.
 Dwellir) to reconstruct eras older than the public node's state retention
 (~8 days on the public PAH RPC).
 
-## The four cards
+## The cards
 
 1. **Election** — round, min-score threshold, and per-era solution min stake vs
    that threshold.
@@ -54,6 +54,12 @@ Dwellir) to reconstruct eras older than the public node's state retention
    (every registered validator's ledger at the boundary block).
 4. **Inflation** — per-era total split into staker rewards / validator
    incentive / buffer Δ.
+5. **Election miner** — pulse timeline per public chain
+   (Polkadot/Kusama/Westend/Paseo Asset Hub): a tick per rewarded signed
+   solution (`MultiBlockElectionSigned.Rewarded`) over the last 7 days, plus
+   the age of the newest one with a ✓/!/✕ health mark (expected cadence
+   = era length: one per era). Fed by `pnpm snapshot-miners` (Subscan only) →
+   `snapshots/miners.json`, baked in like everything else.
 
 Account-derivation and drain-timing details are documented inline in
 `shared/snapshot/health.ts`.

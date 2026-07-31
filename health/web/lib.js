@@ -7,7 +7,7 @@
 
   // ---- helpers ----
   function $(id) { return document.getElementById(id); }
-  function chain() { return DATA[state.chainIdx]; }
+  function chain() { return DATA.chains[state.chainIdx]; }
   function tok(planckStr, c) { return Number(planckStr) / Math.pow(10, c.tokenDecimals); }
 
   function fmtToken(n) {
@@ -405,6 +405,92 @@
     $("distTable").innerHTML = rows;
   }
 
+  // ---- last signed solution (election miners, all chains) ----
+  // Relative age of the winning submission. The page is static, but the event
+  // timestamp is absolute, so rendering against "now" is honest.
+  function agoText(ms) {
+    var mins = Math.max(0, (Date.now() - ms) / 60000);
+    if (mins < 90) return Math.round(mins) + "m ago";
+    if (mins < 48 * 60) return Math.round(mins / 60) + "h ago";
+    return Math.round(mins / 1440) + "d ago";
+  }
+
+  // Subscan events list pre-filtered to the signed pallet's outcome events.
+  function minerEventsUrl(webBase) {
+    var filter = ["rewarded", "slashed", "discarded"].map(function (id) {
+      return { module: "multiblockelectionsigned", event_id: id };
+    });
+    return webBase + "/event?page=1&time_dimension=block&module_event=" +
+      encodeURIComponent(JSON.stringify(filter));
+  }
+
+  // Pulse timeline: per chain, a dot for every rewarded signed solution in
+  // the last 7 days on a shared axis ending at "now", with hollow markers at
+  // the rounds a signed solution SHOULD have won but didn't (one per era).
+  var PULSE_WIN_MS = 7 * 24 * 3600000;
+
+  // Rewarded times (ascending) -> [{t, hit}] including inferred misses: a gap
+  // of ~n eras between neighbours hides n-1 missed rounds (spread evenly
+  // across the gap), and every full era between the newest event and
+  // `knownUntil` is missed too — that's what covers a chain with no events in
+  // the window. Rounds after `knownUntil` (the snapshot fetch time) are
+  // unknown, not missed, so no markers are projected past it.
+  function pulseMarks(times, eraMs, knownUntil) {
+    var marks = times.map(function (t) { return { t: t, hit: true }; });
+    for (var i = 1; i < times.length; i++) {
+      var gap = times[i] - times[i - 1];
+      var n = Math.round(gap / eraMs);
+      for (var j = 1; j < n; j++) marks.push({ t: times[i - 1] + (gap * j) / n, hit: false });
+    }
+    var newest = times[times.length - 1];
+    var pending = Math.floor((knownUntil - newest) / eraMs);
+    for (var k = 1; k <= pending; k++) marks.push({ t: newest + k * eraMs, hit: false });
+    return marks;
+  }
+
+  function renderMiners() {
+    var m = DATA.miners;
+    if (!m || !m.chains || !m.chains.length) {
+      $("minersViz").innerHTML = '<div class="pulse-axis">no data</div>';
+      return;
+    }
+    var now = Date.now();
+    // `fetchedAtMs` bumps whenever any chain's data changes; with 6h/24h eras
+    // that's practically every snapshot run, so it tracks the last fetch.
+    var fetched = Number(m.fetchedAtMs) || now;
+    var knownUntil = Math.min(now, fetched);
+    // Flag the card when the baked data is old enough to hide a fresh era.
+    $("minersStale").textContent =
+      now - fetched > 36 * 3600000 ? "data as of " + agoText(fetched) : "";
+    var html = '<div class="pulse-axis"><span>&larr; 7d</span><span>now</span></div>';
+    m.chains.forEach(function (s) {
+      var times = (s.recentTimestampsMs || [s.blockTimestampMs])
+        .map(Number).sort(function (a, b) { return a - b; });
+      var dots = "";
+      pulseMarks(times, s.eraMs, knownUntil).forEach(function (mk) {
+        var age = now - mk.t;
+        if (age < 0 || age > PULSE_WIN_MS) return;
+        var when = new Date(mk.t).toISOString().replace("T", " ").slice(0, 16) + " UTC";
+        dots += '<span class="pulse-dot' + (mk.hit ? "" : " miss") +
+          '" style="left:' + (100 - (age / PULSE_WIN_MS) * 100).toFixed(2) +
+          '%" title="' + (mk.hit ? "rewarded " + when : "missed round · ~" + when) + '"></span>';
+      });
+      // One Rewarded per era, so under healthy signed mining the last one is at
+      // most an era old. ≤1.2× allows boundary jitter; beyond 3 missed eras
+      // it's critical (unsigned fallback / no miner winning).
+      var ratio = (now - Number(s.blockTimestampMs)) / s.eraMs;
+      var st = ratio <= 1.2 ? ["ok", "✓", "healthy"] : ratio <= 3 ? ["late", "!", "late"] : ["bad", "✕", "critical"];
+      html += '<div class="pulse-row' + (st[0] === "bad" ? " crit" : "") + '"><span>' + s.chainName + '</span>' +
+        '<div class="pulse-track">' + dots + '</div>' +
+        '<span class="pulse-age"><a href="' + minerEventsUrl(s.subscanWeb) +
+          '" target="_blank" rel="noopener" title="expected < ' + (s.eraMs / 3600000) +
+          'h · round ' + s.round + ' won by ' + s.miner + '">' +
+          agoText(Number(s.blockTimestampMs)) + '</a></span>' +
+        '<span class="mark ' + st[0] + '" title="' + st[2] + '">' + st[1] + '</span></div>';
+    });
+    $("minersViz").innerHTML = html;
+  }
+
   // ---- KPI panels ----
   function renderKpis() {
     var c = chain();
@@ -479,7 +565,7 @@
     drawBuffer($("bufferChart"));
     renderDist();
   }
-  function renderAll() { renderTitle(); renderKpis(); renderCharts(); renderFooter(); }
+  function renderAll() { renderTitle(); renderKpis(); renderCharts(); renderMiners(); renderFooter(); }
 
   function renderTitle() {
     var c = chain();

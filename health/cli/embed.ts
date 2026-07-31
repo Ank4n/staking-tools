@@ -10,6 +10,7 @@
  */
 import { getChain } from "../../shared/chains/index.js";
 import { readEra, listEras, readIndex } from "../../shared/snapshot/store.js";
+import { readMiners, type MinersSnapshot } from "../../shared/snapshot/miners.js";
 import type { EraSnapshot } from "../../shared/snapshot/types.js";
 
 /**
@@ -154,12 +155,21 @@ async function buildChain(key: string): Promise<EmbedChain | null> {
   };
 }
 
+/** Top-level embed: per-chain era series + the cross-chain miners block. */
+interface EmbedData {
+  chains: EmbedChain[];
+  /** Last signed election solution per chain (all 4 networks); null if the
+   * miners pass has never run. */
+  miners: MinersSnapshot | null;
+}
+
 async function main() {
-  const out: EmbedChain[] = [];
+  const chains: EmbedChain[] = [];
   for (const key of EMBED_CHAINS) {
     const c = await buildChain(key);
-    if (c) out.push(c);
+    if (c) chains.push(c);
   }
+  const out: EmbedData = { chains, miners: await readMiners() };
   process.stdout.write(JSON.stringify(out, null, 2) + "\n");
 }
 
