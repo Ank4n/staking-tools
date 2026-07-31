@@ -606,10 +606,24 @@
       renderDist();
     });
 
-    // zoom: click a card opens overlay
+    // per-card deep link: "#" in the head sets the URL hash (id is on the card)
+    Array.prototype.forEach.call(document.querySelectorAll(".card[id]"), function (card) {
+      var a = document.createElement("a");
+      a.className = "anchor";
+      a.href = "#" + card.id;
+      a.textContent = "#";
+      a.title = "link to this card";
+      var head = card.querySelector(".card-head");
+      if (head) head.appendChild(a);
+    });
+
+    // zoom: click a card opens overlay (only cards with a CHART_FNS entry)
     Array.prototype.forEach.call(document.querySelectorAll(".card"), function (card) {
+      if (!CHART_FNS[card.getAttribute("data-card")]) return;
+      card.classList.add("zoomable");
       card.addEventListener("click", function (ev) {
         if (ev.target.closest(".seg")) return; // toggles handle their own clicks
+        if (ev.target.closest("a")) return; // links (anchors, Subscan) navigate
         openZoom(card.getAttribute("data-card"));
       });
     });

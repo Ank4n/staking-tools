@@ -47,8 +47,11 @@
   .grid { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 18px; align-items: stretch; }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; grid-auto-rows: auto; } }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-    padding: 18px 20px 16px; position: relative; overflow: hidden; cursor: zoom-in;
+    padding: 18px 20px 16px; position: relative; overflow: hidden;
     display: flex; flex-direction: column; }
+  /* Only cards with a zoom-overlay chart (CHART_FNS, class set at init)
+     advertise click-to-zoom. */
+  .card.zoomable { cursor: zoom-in; }
   /* Push the main visual (chart/table) to take the remaining height so paired
      cards align even when their KPI rows differ in length. */
   .card > canvas, .card > table.dist { margin-top: auto; }
@@ -57,6 +60,13 @@
   .card > * { position: relative; }
   .card-head { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase;
     color: var(--muted); margin: 0 0 4px; display: flex; align-items: baseline; gap: 8px; }
+  /* Per-card deep link: a "#" that appears on card hover; the URL hash scrolls
+     to the card and .card:target highlights it. */
+  html { scroll-behavior: smooth; }
+  .card-head .anchor { color: var(--faint); text-decoration: none; opacity: 0; transition: opacity 0.12s; }
+  .card:hover .card-head .anchor, .card-head .anchor:focus-visible { opacity: 1; }
+  .card-head .anchor:hover { color: var(--accent); }
+  .card:target { border-color: var(--accent); }
   .card-head .hint { font-size: 11px; color: var(--faint); text-transform: none; letter-spacing: 0; }
   /* (i) info chip with a CSS tooltip on hover/focus. */
   .info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
@@ -175,44 +185,8 @@
   </header>
 
   <div class="grid" id="grid">
-    <!-- Row 1: issuance — reward pots + buffer (both grow over time). -->
-    <section class="card" data-card="inflation">
-      <div class="card-head">Reward pots <span class="hint" id="inflationHint"></span></div>
-      <div class="kpis spread" id="inflationKpis"></div>
-      <canvas id="inflationChart"></canvas>
-      <div class="legend">
-        <span><i style="background:var(--accent)"></i>staker rewards</span>
-        <span><i style="background:var(--accent-2)"></i>validator incentive</span>
-      </div>
-    </section>
-
-    <section class="card" data-card="buffer">
-      <div class="card-head">Buffer
-        <span class="info" tabindex="0" role="button" aria-label="about this metric"
-          data-tip="DAP buffer account — accumulates slashes, fees & dust. Bars show each era's growth (Δ); the current balance is the KPI above.">i</span>
-      </div>
-      <div class="kpis spread" id="bufferKpis"></div>
-      <canvas id="bufferChart"></canvas>
-      <div class="legend">
-        <span><i style="background:var(--accent)"></i>growth per era (Δ)</span>
-      </div>
-    </section>
-
-    <!-- Row 2: self-stake + election. -->
-    <section class="card" data-card="staking2">
-      <div class="card-head">Validator self-stake
-        <span class="info" id="distInfo" tabindex="0" role="button" aria-label="snapshot block"
-          data-tip="">i</span>
-        <span class="seg" id="distSeg">
-          <button data-set="active" aria-pressed="false">active</button>
-          <button data-set="all" aria-pressed="true">all</button>
-        </span>
-      </div>
-      <div class="card-head hint" id="distHint" style="margin-top:2px"></div>
-      <table class="dist" id="distTable"></table>
-    </section>
-
-    <section class="card" data-card="election">
+    <!-- Row 1: the election — outcome quality + signed-miner pulse. -->
+    <section class="card" data-card="election" id="election">
       <div class="card-head">Election
         <span class="info" tabindex="0" role="button" aria-label="about this metric"
           data-tip="Min-stake part of the election score only — not sum-stake / sum-squared">i</span>
@@ -226,19 +200,7 @@
       </div>
     </section>
 
-    <!-- Row 3: participants + a playful placeholder. -->
-    <section class="card" data-card="staking1">
-      <div class="card-head">Staking — participants &amp; unbonding</div>
-      <div class="kpis spread" id="staking1Kpis"></div>
-      <canvas id="staking1Chart"></canvas>
-      <div class="legend">
-        <span><i style="background:var(--accent)"></i>nominators</span>
-        <span><i style="background:var(--accent-2)"></i>registered validators</span>
-        <span><i style="background:var(--warn)"></i>unbonding (tokens)</span>
-      </div>
-    </section>
-
-    <section class="card" data-card="miners">
+    <section class="card" data-card="miners" id="miners">
       <div class="card-head">Election miner
         <span class="info" tabindex="0" role="button" aria-label="about this metric"
           data-tip="One signed solution should be rewarded per era (MultiBlockElectionSigned.Rewarded on the Asset Hub): Polkadot every 24h, others every 6h. Filled dot = rewarded; hollow = a round no signed solution won.">i</span>
@@ -250,6 +212,55 @@
         <span><i style="background:transparent; border:1.5px solid var(--bad); border-radius:50%"></i>missing</span>
       </div>
     </section>
+
+    <!-- Row 2: issuance — reward pots + buffer (both grow over time). -->
+    <section class="card" data-card="inflation" id="inflation">
+      <div class="card-head">Reward pots <span class="hint" id="inflationHint"></span></div>
+      <div class="kpis spread" id="inflationKpis"></div>
+      <canvas id="inflationChart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>staker rewards</span>
+        <span><i style="background:var(--accent-2)"></i>validator incentive</span>
+      </div>
+    </section>
+
+    <section class="card" data-card="buffer" id="buffer">
+      <div class="card-head">Buffer
+        <span class="info" tabindex="0" role="button" aria-label="about this metric"
+          data-tip="DAP buffer account — accumulates slashes, fees & dust. Bars show each era's growth (Δ); the current balance is the KPI above.">i</span>
+      </div>
+      <div class="kpis spread" id="bufferKpis"></div>
+      <canvas id="bufferChart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>growth per era (Δ)</span>
+      </div>
+    </section>
+
+    <!-- Row 3: staking — self-stake distribution + participants. -->
+    <section class="card" data-card="staking2" id="staking2">
+      <div class="card-head">Validator self-stake
+        <span class="info" id="distInfo" tabindex="0" role="button" aria-label="snapshot block"
+          data-tip="">i</span>
+        <span class="seg" id="distSeg">
+          <button data-set="active" aria-pressed="false">active</button>
+          <button data-set="all" aria-pressed="true">all</button>
+        </span>
+      </div>
+      <div class="card-head hint" id="distHint" style="margin-top:2px"></div>
+      <table class="dist" id="distTable"></table>
+    </section>
+
+    <section class="card" data-card="staking1" id="staking1">
+      <div class="card-head">Staking — participants &amp; unbonding</div>
+      <div class="kpis spread" id="staking1Kpis"></div>
+      <canvas id="staking1Chart"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>nominators</span>
+        <span><i style="background:var(--accent-2)"></i>registered validators</span>
+        <span><i style="background:var(--warn)"></i>unbonding (tokens)</span>
+      </div>
+    </section>
+
   </div>
 
   <footer class="basis" id="basis"></footer>
