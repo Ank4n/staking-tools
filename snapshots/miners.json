@@ -1,5 +1,5 @@
 {
-  "fetchedAtMs": "1785763981640",
+  "fetchedAtMs": "1785764204891",
   "chains": [
     {
       "chainKey": "pah",
@@ -65,13 +65,14 @@
       "tokenSymbol": "KSM",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1199,
+      "round": 1200,
       "miner": "FyrGiYDGVxg5UUpN3qR5nxKGMxCe5Ddfkb3BXjxybG6j8gX",
       "minerHex": "0x96a6df31a112d610277c818fd9a8443d265fb5ab83cba47c5e89cff16cf9e011",
-      "rewardPlanck": "215092260485",
-      "blockNum": 19797411,
-      "blockTimestampMs": "1785742344000",
+      "rewardPlanck": "215101593809",
+      "blockNum": 19806939,
+      "blockTimestampMs": "1785763968000",
       "recentTimestampsMs": [
+        "1785763968000",
         "1785742344000",
         "1785720768000",
         "1785699192000",
@@ -110,10 +111,9 @@
         "1784986344000",
         "1784964720000",
         "1784943192000",
-        "1784921544000",
-        "1784899968000"
+        "1784921544000"
       ],
-      "rewardedCount": 1198
+      "rewardedCount": 1199
     },
     {
       "chainKey": "wah",
