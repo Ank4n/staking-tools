@@ -129,7 +129,8 @@
 
   /* Election-miner-status pulse timeline: one row per chain, a dot per
      rewarded signed solution (hollow red = missed round) on a shared 7-day
-     axis ending at "now". Centered vertically in the stretched grid slot. */
+     axis ending at the last snapshot update. Centered vertically in the
+     stretched grid slot. */
   .pulse { margin: auto 0; display: flex; flex-direction: column; gap: 12px;
     font-family: var(--mono); font-size: 12.5px; }
   /* Axis caption spans only the track column: row side-padding 8 + name 72 +
@@ -205,7 +206,7 @@
       <div class="card-head">Election miner
         <span class="info" tabindex="0" role="button" aria-label="about this metric"
           data-tip="One signed solution should be rewarded per era (MultiBlockElectionSigned.Rewarded on the Asset Hub): Polkadot every 24h, others every 6h. Filled dot = rewarded; hollow = a round no signed solution won.">i</span>
-        <span class="hint" id="minersStale" style="color:var(--warn)"></span>
+        <span class="hint" id="minersStale"></span>
       </div>
       <div class="pulse" id="minersViz"></div>
       <div class="legend">

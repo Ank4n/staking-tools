@@ -406,10 +406,12 @@
   }
 
   // ---- last signed solution (election miners, all chains) ----
-  // Relative age of the winning submission. The page is static, but the event
-  // timestamp is absolute, so rendering against "now" is honest.
-  function agoText(ms) {
-    var mins = Math.max(0, (Date.now() - ms) / 60000);
+  // Relative age of a timestamp, measured from `ref` (default: now). The
+  // miner rows pass the snapshot fetch time as `ref`: the page is static, so
+  // anything after the last fetch is unknown, not missing — ages measured
+  // against "now" would slide stale-but-healthy chains into "critical".
+  function agoText(ms, ref) {
+    var mins = Math.max(0, ((ref != null ? ref : Date.now()) - ms) / 60000);
     if (mins < 90) return Math.round(mins) + "m ago";
     if (mins < 48 * 60) return Math.round(mins / 60) + "h ago";
     return Math.round(mins / 1440) + "d ago";
@@ -425,8 +427,9 @@
   }
 
   // Pulse timeline: per chain, a dot for every rewarded signed solution in
-  // the last 7 days on a shared axis ending at "now", with hollow markers at
-  // the rounds a signed solution SHOULD have won but didn't (one per era).
+  // the 7 days up to the last snapshot fetch (the shared axis ends there, not
+  // at "now" — the baked data can't know anything newer), with hollow markers
+  // at the rounds a signed solution SHOULD have won but didn't (one per era).
   var PULSE_WIN_MS = 7 * 24 * 3600000;
 
   // Rewarded times (ascending) -> [{t, hit}] including inferred misses: a gap
@@ -459,16 +462,18 @@
     // that's practically every snapshot run, so it tracks the last fetch.
     var fetched = Number(m.fetchedAtMs) || now;
     var knownUntil = Math.min(now, fetched);
-    // Flag the card when the baked data is old enough to hide a fresh era.
-    $("minersStale").textContent =
-      now - fetched > 36 * 3600000 ? "data as of " + agoText(fetched) : "";
-    var html = '<div class="pulse-axis"><span>&larr; 7d</span><span>now</span></div>';
+    // Ages, statuses and the axis are all measured from `knownUntil`, so a
+    // stale snapshot reads as stale (the hint below), never as chain trouble.
+    // The hint turns warn once the data is old enough to hide a full PAH era.
+    $("minersStale").textContent = "updated " + agoText(fetched);
+    $("minersStale").style.color = now - fetched > 36 * 3600000 ? "var(--warn)" : "";
+    var html = '<div class="pulse-axis"><span>&larr; 7d</span><span>last update</span></div>';
     m.chains.forEach(function (s) {
       var times = (s.recentTimestampsMs || [s.blockTimestampMs])
         .map(Number).sort(function (a, b) { return a - b; });
       var dots = "";
       pulseMarks(times, s.eraMs, knownUntil).forEach(function (mk) {
-        var age = now - mk.t;
+        var age = knownUntil - mk.t;
         if (age < 0 || age > PULSE_WIN_MS) return;
         var when = new Date(mk.t).toISOString().replace("T", " ").slice(0, 16) + " UTC";
         dots += '<span class="pulse-dot' + (mk.hit ? "" : " miss") +
@@ -476,16 +481,16 @@
           '%" title="' + (mk.hit ? "rewarded " + when : "missed round · ~" + when) + '"></span>';
       });
       // One Rewarded per era, so under healthy signed mining the last one is at
-      // most an era old. ≤1.2× allows boundary jitter; beyond 3 missed eras
-      // it's critical (unsigned fallback / no miner winning).
-      var ratio = (now - Number(s.blockTimestampMs)) / s.eraMs;
+      // most an era old (as of the fetch). ≤1.2× allows boundary jitter; beyond
+      // 3 missed eras it's critical (unsigned fallback / no miner winning).
+      var ratio = (knownUntil - Number(s.blockTimestampMs)) / s.eraMs;
       var st = ratio <= 1.2 ? ["ok", "✓", "healthy"] : ratio <= 3 ? ["late", "!", "late"] : ["bad", "✕", "critical"];
       html += '<div class="pulse-row' + (st[0] === "bad" ? " crit" : "") + '"><span>' + s.chainName + '</span>' +
         '<div class="pulse-track">' + dots + '</div>' +
         '<span class="pulse-age"><a href="' + minerEventsUrl(s.subscanWeb) +
           '" target="_blank" rel="noopener" title="expected < ' + (s.eraMs / 3600000) +
           'h · round ' + s.round + ' won by ' + s.miner + '">' +
-          agoText(Number(s.blockTimestampMs)) + '</a></span>' +
+          agoText(Number(s.blockTimestampMs), knownUntil) + '</a></span>' +
         '<span class="mark ' + st[0] + '" title="' + st[2] + '">' + st[1] + '</span></div>';
     });
     $("minersViz").innerHTML = html;
