@@ -1,5 +1,5 @@
 {
-  "fetchedAtMs": "1786709545974",
+  "fetchedAtMs": "1786808950869",
   "chains": [
     {
       "chainKey": "pah",
@@ -8,13 +8,14 @@
       "tokenSymbol": "DOT",
       "tokenDecimals": 10,
       "eraMs": 86400000,
-      "round": 281,
+      "round": 282,
       "miner": "14x3h6Vfr1fcW1wcf53K3LiTkMHQUcWQzWLRYAB7AnAehhFN",
       "minerHex": "0xaeb041dd5192e505ed17d657d6414ae6951179d9e04f06f1e9369bc01b5d2522",
-      "rewardPlanck": "56167386268",
-      "blockNum": 19453436,
-      "blockTimestampMs": "1786708176000",
+      "rewardPlanck": "56179686268",
+      "blockNum": 19492701,
+      "blockTimestampMs": "1786794576000",
       "recentTimestampsMs": [
+        "1786794576000",
         "1786708176000",
         "1786621728000",
         "1786535352000",
@@ -53,10 +54,9 @@
         "1783684128000",
         "1783597728000",
         "1783511376000",
-        "1783424928000",
-        "1783338672000"
+        "1783424928000"
       ],
-      "rewardedCount": 279
+      "rewardedCount": 280
     },
     {
       "chainKey": "kah",
@@ -65,13 +65,18 @@
       "tokenSymbol": "KSM",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1243,
+      "round": 1248,
       "miner": "FyrGiYDGVxg5UUpN3qR5nxKGMxCe5Ddfkb3BXjxybG6j8gX",
       "minerHex": "0x96a6df31a112d610277c818fd9a8443d265fb5ab83cba47c5e89cff16cf9e011",
-      "rewardPlanck": "215072593838",
-      "blockNum": 20211447,
-      "blockTimestampMs": "1786692768000",
+      "rewardPlanck": "215100593810",
+      "blockNum": 20259016,
+      "blockTimestampMs": "1786800768000",
       "recentTimestampsMs": [
+        "1786800768000",
+        "1786779168000",
+        "1786757568000",
+        "1786735968000",
+        "1786714368000",
         "1786692768000",
         "1786671168000",
         "1786649616000",
@@ -106,14 +111,9 @@
         "1786023168000",
         "1786001568000",
         "1785979968000",
-        "1785958344000",
-        "1785936768000",
-        "1785915168000",
-        "1785893616000",
-        "1785871968000",
-        "1785850392000"
+        "1785958344000"
       ],
-      "rewardedCount": 1242
+      "rewardedCount": 1247
     },
     {
       "chainKey": "wah",
@@ -122,13 +122,18 @@
       "tokenSymbol": "WND",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1618,
+      "round": 1623,
       "miner": "5CwN2neJityQ3RAWTzkdpMX1u8UbmuzqeuYEL534QBJh53Cb",
       "minerHex": "0x26a2c6e491cf302d687648981d8f15817ab2bf95090c0500ced1653d97600753",
-      "rewardPlanck": "10758653438087",
-      "blockNum": 16745234,
-      "blockTimestampMs": "1786699512000",
+      "rewardPlanck": "10758613438087",
+      "blockNum": 16755879,
+      "blockTimestampMs": "1786807272000",
       "recentTimestampsMs": [
+        "1786807272000",
+        "1786785816000",
+        "1786763832000",
+        "1786742616000",
+        "1786721160000",
         "1786699512000",
         "1786678104000",
         "1786655928000",
@@ -163,14 +168,9 @@
         "1786007496000",
         "1785985944000",
         "1785964248000",
-        "1785942648000",
-        "1785921048000",
-        "1785899232000",
-        "1785877656000",
-        "1785856080000",
-        "1785834552000"
+        "1785942648000"
       ],
-      "rewardedCount": 1144
+      "rewardedCount": 1149
     },
     {
       "chainKey": "pas",
@@ -179,13 +179,18 @@
       "tokenSymbol": "PAS",
       "tokenDecimals": 10,
       "eraMs": 21600000,
-      "round": 1222,
+      "round": 1227,
       "miner": "5CwN2neJityQ3RAWTzkdpMX1u8UbmuzqeuYEL534QBJh53Cb",
       "minerHex": "0x26a2c6e491cf302d687648981d8f15817ab2bf95090c0500ced1653d97600753",
       "rewardPlanck": "50098946519",
-      "blockNum": 12207591,
-      "blockTimestampMs": "1786692576000",
+      "blockNum": 12257978,
+      "blockTimestampMs": "1786800516000",
       "recentTimestampsMs": [
+        "1786800516000",
+        "1786779096000",
+        "1786757376000",
+        "1786735716000",
+        "1786714344000",
         "1786692576000",
         "1786671060000",
         "1786649460000",
@@ -220,14 +225,9 @@
         "1786022916000",
         "1786001316000",
         "1785979716000",
-        "1785958116000",
-        "1785936516000",
-        "1785914916000",
-        "1785893340000",
-        "1785871716000",
-        "1785850116000"
+        "1785958116000"
       ],
-      "rewardedCount": 1117
+      "rewardedCount": 1122
     }
   ]
 }
