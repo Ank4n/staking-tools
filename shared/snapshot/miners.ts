@@ -136,6 +136,13 @@ const SUBSCAN_PACE_MS = 300;
  */
 const RECENT_EVENTS = 40;
 
+/**
+ * Max `row` Subscan accepts per list call — anything above returns
+ * HTTP 403 `row_limit_exceeded` (limit verified empirically 2026-09; it used
+ * to allow 40+). Lists larger than this must paginate.
+ */
+const SUBSCAN_ROW_LIMIT = 25;
+
 async function subscanPost<T>(
   host: string,
   path: string,
@@ -164,16 +171,26 @@ export async function fetchLastSolution(
   chain: MinerChain,
   apiKey: string,
 ): Promise<LastSolution> {
-  const list = await subscanPost<{
-    count: number;
-    events: { event_index: string; block_timestamp: number }[] | null;
-  }>(
-    chain.api,
-    "/api/v2/scan/events",
-    { module: "multiblockelectionsigned", event_id: "rewarded", row: RECENT_EVENTS, page: 0 },
-    apiKey,
-  );
-  const head = list.events?.[0];
+  // Paginated: Subscan caps `row` at SUBSCAN_ROW_LIMIT per call.
+  let rewardedCount = 0;
+  const events: { event_index: string; block_timestamp: number }[] = [];
+  for (let page = 0; events.length < RECENT_EVENTS; page++) {
+    if (page > 0) await sleep(SUBSCAN_PACE_MS);
+    const list = await subscanPost<{
+      count: number;
+      events: { event_index: string; block_timestamp: number }[] | null;
+    }>(
+      chain.api,
+      "/api/v2/scan/events",
+      { module: "multiblockelectionsigned", event_id: "rewarded", row: SUBSCAN_ROW_LIMIT, page },
+      apiKey,
+    );
+    rewardedCount = list.count;
+    const batch = list.events ?? [];
+    events.push(...batch);
+    if (batch.length < SUBSCAN_ROW_LIMIT) break; // chain has no more events
+  }
+  const head = events[0];
   if (!head) throw new Error(`${chain.key}: no Rewarded events on Subscan`);
 
   await sleep(SUBSCAN_PACE_MS);
@@ -202,8 +219,10 @@ export async function fetchLastSolution(
     rewardPlanck: String(reward.value),
     blockNum: detail.block_num,
     blockTimestampMs: String(head.block_timestamp * 1000),
-    recentTimestampsMs: (list.events ?? []).map((e) => String(e.block_timestamp * 1000)),
-    rewardedCount: list.count,
+    recentTimestampsMs: events
+      .slice(0, RECENT_EVENTS)
+      .map((e) => String(e.block_timestamp * 1000)),
+    rewardedCount,
   };
 }
 
