@@ -1,5 +1,5 @@
 {
-  "fetchedAtMs": "1791775546241",
+  "fetchedAtMs": "1791832643712",
   "chains": [
     {
       "chainKey": "pah",
@@ -8,13 +8,14 @@
       "tokenSymbol": "DOT",
       "tokenDecimals": 10,
       "eraMs": 86400000,
-      "round": 339,
+      "round": 340,
       "miner": "14x3h6Vfr1fcW1wcf53K3LiTkMHQUcWQzWLRYAB7AnAehhFN",
       "minerHex": "0xaeb041dd5192e505ed17d657d6414ae6951179d9e04f06f1e9369bc01b5d2522",
-      "rewardPlanck": "53885249232",
-      "blockNum": 21697694,
-      "blockTimestampMs": "1791719376000",
+      "rewardPlanck": "53896799232",
+      "blockNum": 21736818,
+      "blockTimestampMs": "1791805848000",
       "recentTimestampsMs": [
+        "1791805848000",
         "1791719376000",
         "1791632976000",
         "1791546624000",
@@ -53,10 +54,9 @@
         "1788695400000",
         "1788608976000",
         "1788522672000",
-        "1788436176000",
-        "1788349776000"
+        "1788436176000"
       ],
-      "rewardedCount": 337
+      "rewardedCount": 338
     },
     {
       "chainKey": "kah",
@@ -65,13 +65,15 @@
       "tokenSymbol": "KSM",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1478,
-      "miner": "GZ6kPJTsUwf9DdeanvvdExYJX5965kKh8kkfr1Xer7G43uh",
-      "minerHex": "0xb002b44a2290e5834a02b5d43687b80b4f88a5fefcffe1343df75e0c33473156",
-      "rewardPlanck": "214936927307",
-      "blockNum": 22460314,
-      "blockTimestampMs": "1791768744000",
+      "round": 1480,
+      "miner": "FyrGiYDGVxg5UUpN3qR5nxKGMxCe5Ddfkb3BXjxybG6j8gX",
+      "minerHex": "0x96a6df31a112d610277c818fd9a8443d265fb5ab83cba47c5e89cff16cf9e011",
+      "rewardPlanck": "214959260618",
+      "blockNum": 22480334,
+      "blockTimestampMs": "1791811968000",
       "recentTimestampsMs": [
+        "1791811968000",
+        "1791790344000",
         "1791768744000",
         "1791747144000",
         "1791725544000",
@@ -109,11 +111,9 @@
         "1791034392000",
         "1791012816000",
         "1790991120000",
-        "1790969568000",
-        "1790947944000",
-        "1790926344000"
+        "1790969568000"
       ],
-      "rewardedCount": 1476
+      "rewardedCount": 1478
     },
     {
       "chainKey": "wah",
@@ -122,13 +122,15 @@
       "tokenSymbol": "WND",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1853,
+      "round": 1855,
       "miner": "5CwN2neJityQ3RAWTzkdpMX1u8UbmuzqeuYEL534QBJh53Cb",
       "minerHex": "0x26a2c6e491cf302d687648981d8f15817ab2bf95090c0500ced1653d97600753",
-      "rewardPlanck": "10758262095931",
-      "blockNum": 18048087,
-      "blockTimestampMs": "1791774192000",
+      "rewardPlanck": "10758292095931",
+      "blockNum": 18062885,
+      "blockTimestampMs": "1791817536000",
       "recentTimestampsMs": [
+        "1791817536000",
+        "1791795840000",
         "1791774192000",
         "1791752664000",
         "1791731064000",
@@ -166,11 +168,9 @@
         "1791040896000",
         "1791018888000",
         "1790997264000",
-        "1790975856000",
-        "1790954496000",
-        "1790932776000"
+        "1790975856000"
       ],
-      "rewardedCount": 1370
+      "rewardedCount": 1372
     },
     {
       "chainKey": "pas",
@@ -179,13 +179,15 @@
       "tokenSymbol": "PAS",
       "tokenDecimals": 10,
       "eraMs": 21600000,
-      "round": 1457,
+      "round": 1459,
       "miner": "5CwN2neJityQ3RAWTzkdpMX1u8UbmuzqeuYEL534QBJh53Cb",
       "minerHex": "0x26a2c6e491cf302d687648981d8f15817ab2bf95090c0500ced1653d97600753",
       "rewardPlanck": "50099546519",
-      "blockNum": 14324674,
-      "blockTimestampMs": "1791768528000",
+      "blockNum": 14345972,
+      "blockTimestampMs": "1791811740000",
       "recentTimestampsMs": [
+        "1791811740000",
+        "1791790140000",
         "1791768528000",
         "1791746928000",
         "1791725328000",
@@ -223,11 +225,9 @@
         "1790969772000",
         "1790947728000",
         "1790926140000",
-        "1790904540000",
-        "1790882916000",
-        "1790861316000"
+        "1790904540000"
       ],
-      "rewardedCount": 1348
+      "rewardedCount": 1350
     }
   ]
 }
