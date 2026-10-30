@@ -1,5 +1,5 @@
 {
-  "fetchedAtMs": "1793343902954",
+  "fetchedAtMs": "1793371890746",
   "chains": [
     {
       "chainKey": "pah",
@@ -8,13 +8,14 @@
       "tokenSymbol": "DOT",
       "tokenDecimals": 10,
       "eraMs": 86400000,
-      "round": 357,
+      "round": 358,
       "miner": "14x3h6Vfr1fcW1wcf53K3LiTkMHQUcWQzWLRYAB7AnAehhFN",
       "minerHex": "0xaeb041dd5192e505ed17d657d6414ae6951179d9e04f06f1e9369bc01b5d2522",
-      "rewardPlanck": "53903849232",
-      "blockNum": 22443623,
-      "blockTimestampMs": "1793274552000",
+      "rewardPlanck": "53901199232",
+      "blockNum": 22485667,
+      "blockTimestampMs": "1793360904000",
       "recentTimestampsMs": [
+        "1793360904000",
         "1793274552000",
         "1793188128000",
         "1793101752000",
@@ -53,10 +54,9 @@
         "1790250600000",
         "1790164152000",
         "1790077776000",
-        "1789991352000",
-        "1789904952000"
+        "1789991352000"
       ],
-      "rewardedCount": 355
+      "rewardedCount": 356
     },
     {
       "chainKey": "kah",
@@ -65,13 +65,15 @@
       "tokenSymbol": "KSM",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1550,
+      "round": 1552,
       "miner": "GZ6kPJTsUwf9DdeanvvdExYJX5965kKh8kkfr1Xer7G43uh",
       "minerHex": "0xb002b44a2290e5834a02b5d43687b80b4f88a5fefcffe1343df75e0c33473156",
-      "rewardPlanck": "214822865133",
-      "blockNum": 23177040,
-      "blockTimestampMs": "1793323992000",
+      "rewardPlanck": "214809531813",
+      "blockNum": 23196994,
+      "blockTimestampMs": "1793367120000",
       "recentTimestampsMs": [
+        "1793367120000",
+        "1793345544000",
         "1793323992000",
         "1793302368000",
         "1793280792000",
@@ -109,11 +111,9 @@
         "1792589544000",
         "1792567968000",
         "1792546320000",
-        "1792524792000",
-        "1792503168000",
-        "1792481520000"
+        "1792524792000"
       ],
-      "rewardedCount": 1548
+      "rewardedCount": 1550
     },
     {
       "chainKey": "wah",
@@ -122,13 +122,14 @@
       "tokenSymbol": "WND",
       "tokenDecimals": 12,
       "eraMs": 21600000,
-      "round": 1925,
+      "round": 1926,
       "miner": "5CwN2neJityQ3RAWTzkdpMX1u8UbmuzqeuYEL534QBJh53Cb",
       "minerHex": "0x26a2c6e491cf302d687648981d8f15817ab2bf95090c0500ced1653d97600753",
-      "rewardPlanck": "10758202095931",
-      "blockNum": 18772892,
-      "blockTimestampMs": "1793329320000",
+      "rewardPlanck": "10758282095931",
+      "blockNum": 18783096,
+      "blockTimestampMs": "1793352192000",
       "recentTimestampsMs": [
+        "1793352192000",
         "1793329320000",
         "1793307720000",
         "1793286120000",
@@ -167,10 +168,9 @@
         "1792573320000",
         "1792551720000",
         "1792530120000",
-        "1792508520000",
-        "1792486920000"
+        "1792508520000"
       ],
-      "rewardedCount": 1441
+      "rewardedCount": 1442
     },
     {
       "chainKey": "pas",
@@ -179,13 +179,15 @@
       "tokenSymbol": "PAS",
       "tokenDecimals": 10,
       "eraMs": 21600000,
-      "round": 1529,
+      "round": 1531,
       "miner": "5CwN2neJityQ3RAWTzkdpMX1u8UbmuzqeuYEL534QBJh53Cb",
       "minerHex": "0x26a2c6e491cf302d687648981d8f15817ab2bf95090c0500ced1653d97600753",
       "rewardPlanck": "50095468743",
-      "blockNum": 15083344,
-      "blockTimestampMs": "1793323740000",
+      "blockNum": 15104196,
+      "blockTimestampMs": "1793366928000",
       "recentTimestampsMs": [
+        "1793366928000",
+        "1793345352000",
         "1793323740000",
         "1793302140000",
         "1793280648000",
@@ -223,11 +225,9 @@
         "1792373340000",
         "1792351716000",
         "1792330116000",
-        "1792308528000",
-        "1792286940000",
-        "1792265328000"
+        "1792308528000"
       ],
-      "rewardedCount": 1410
+      "rewardedCount": 1412
     }
   ]
 }
